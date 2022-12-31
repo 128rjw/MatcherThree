@@ -7,10 +7,22 @@ window.onload = function() {
 
     // Timing and frames per second
     // stuff into class?
-    var lastFrame = 0;
-    var FPSTime = 0;
-    var frameCount = 0;
+    var lastFrame = 0;    
     var framesPerSecond = 0;
+
+    // Timing and frames per second
+    var lastframe = 0;
+    var fpstime = 0;
+    var framecount = 0;
+    var fps = 0;
+    
+    // Mouse dragging
+    var drag = false;    
+
+
+    // Game states
+    var gamestates = { init: 0, ready: 1, resolve: 2 };
+    var gamestate = gamestates.init;        
 
     // are we using this?
     const myTileTypes = {
@@ -52,7 +64,7 @@ window.onload = function() {
 
 
     // Level object
-    var gameGrid = {
+    var level = {
         x: 250,         // X position of canvas?
         y: 113,         // Y position
         TOTALCOLUMNS: 8,     // Number of tile columns
@@ -68,9 +80,7 @@ window.onload = function() {
         foundClusters: []
 
     };
-
     // All of the different tile colors in RGB
-    // replace with images?
     var tilecolors = [[255, 128, 128],
                       [128, 255, 128],
                       [128, 128, 255],
@@ -78,39 +88,57 @@ window.onload = function() {
                       [255, 128, 255],
                       [128, 255, 255],
                       [255, 255, 255]];
+    
+    // Clusters and moves that were found
+    var clusters = [];  // { column, row, length, horizontal }
+    var moves = [];     // { column1, row1, column2, row2 }
 
-
-
-
+    // Current move
+    var currentmove = { column1: 0, row1: 0, column2: 0, row2: 0 };
+    
     // Game states
-    var currentGameState = { init: 0, ready: 1};
-    var gameState = currentGameState.init;
-    var myScore = 0;
-    var animationState = 0; // Animation variables
-    var animationTime = 0;
-    var animationTimeTotal = 0.3;
-    var isGameOver = false;
+    var gamestates = { init: 0, ready: 1, resolve: 2 };
+    var gamestate = gamestates.init;
+    
+    // Score
+    var score = 0;
+    
+    // Animation variables
+    var animationstate = 0;
+    var animationtime = 0;
+    var animationtimetotal = 0.3;
+    
+    // Show available moves
+    var showmoves = false;
+    
+    // The AI bot
+    var aibot = false;
+    
+    // Game Over
+    var gameover = false;
     var gameButtons = [ { x: 30, y: 270, width: 150, height: 50, text: "New Game"},
                     { x: 30, y: 330, width: 150, height: 50, text: "Show Moves"}];
 
-    // Initialize the game
-    function initGame() {
-        console.log("initting events");
+    // PROGRAM ENTRY POINT
+    function init() {
+        console.log("*** initting events ***");
         canvas.addEventListener("mousedown", onMouseDown);  // keep
-        //canvas.addEventListener("mouseup", onMouseUp);  // not needed(or finish move)
-        canvas.addEventListener("mouseout", onMouseOut); // not really needed
-        for (var thisColumn=0; thisColumn<gameGrid.TOTALCOLUMNS; thisColumn++) {
-            //gameGrid.tiles[thisColumn] = [];   // clear it out
-            for (var thisRow=0; thisRow<gameGrid.TOTALROWS; thisRow++) {
-                gameGrid.tiles[thisColumn][thisRow] = { type: 0, shift:0 }
+        //canvas.addEventListener("mouseout", onMouseOut); // not really needed
+
+
+        for (var thisColumn=0; thisColumn<level.TOTALCOLUMNS; thisColumn++) {
+            level.tiles[thisColumn] = [];
+            for (var thisRow=0; thisRow<level.TOTALROWS; thisRow++) {
+                level.tiles[thisColumn][thisRow] = { type: returnRandomTileColor(), shift:0 }
+                console.log(`setting TILES`);
             }
         }
         startNewGame(); // New game(part 2?)
-        init(0); // Enter main loop
+        main(0); // Enter main loop
     }
 
     // Main loop
-    function init(theFrame) {
+    function main(theFrame) {
         window.requestAnimationFrame(init); // Request animation frames
         updateGameState(theFrame); // Update and render the game
         renderWholeScreen();
@@ -197,27 +225,27 @@ window.onload = function() {
         drawGridFrame(); // Draw the frame
         context.fillStyle = "#000000"; // Draw score
         context.font = "24px Verdana";
-        drawCenterText("Score:", 30, gameGrid.y+40, 150);
-        drawCenterText(myScore, 30, gameGrid.y+70, 150);
-        drawCenterText("Total Moves: ",30, gameGrid.y+100, 150);
-        drawCenterText(myScore, 30, gameGrid.y+130, 150); // TODO: update
+        drawCenterText("Score:", 30, level.y+40, 150);
+        drawCenterText(myScore, 30, level.y+70, 150);
+        drawCenterText("Total Moves: ",30, level.y+100, 150);
+        drawCenterText(myScore, 30, level.y+130, 150); // TODO: update
         drawButtons(); // render buttons
         // Draw level background
-        var levelWidth = gameGrid.TOTALCOLUMNS * gameGrid.TILEWIDTH;
-        var levelHeight = gameGrid.TOTALROWS * gameGrid.TILEHEIGHT;
+        var levelWidth = level.TOTALCOLUMNS * level.TILEWIDTH;
+        var levelHeight = level.TOTALROWS * level.TILEHEIGHT;
         context.fillStyle = "#000000";  // todo: change
-        context.fillRect(gameGrid.x - 4, gameGrid.y - 4, levelWidth + 8, levelHeight + 8);
+        context.fillRect(level.x - 4, level.y - 4, levelWidth + 8, levelHeight + 8);
         renderTiles(); // Render tiles
-        renderClusters(); // Render clusters(not needed)
+        //renderClusters(); // Render clusters(not needed)
 
         // Game Over overlay
         if (isGameOver) {
             context.fillStyle = "rgba(0, 0, 0, 0.8)";
-            context.fillRect(gameGrid.x, gameGrid.y, levelWidth, levelHeight);
+            context.fillRect(level.x, level.y, levelWidth, levelHeight);
 
             context.fillStyle = "#ffffff";
             context.font = "24px Verdana";
-            drawCenterText("Game Over!", gameGrid.x, gameGrid.y + levelHeight / 2 + 10, levelWidth);
+            drawCenterText("Game Over!", level.x, level.y + levelHeight / 2 + 10, levelWidth);
         }
     }
 
@@ -262,28 +290,28 @@ window.onload = function() {
 
     // Render tiles
     function renderTiles() {
-        for (var column=0; column<gameGrid.TOTALCOLUMNS; column++) {
-            for (var row=0; row<gameGrid.TOTALROWS; row++) {
+        for (var column=0; column<level.TOTALCOLUMNS; column++) {
+            for (var row=0; row<level.TOTALROWS; row++) {
                 // Get the shift of the tile for animation
-                var shift = 0; // gameGrid.tiles[column][row].shift;
+                var shift = 0; // level.tiles[column][row].shift;
 
                 // Calculate the tile coordinates
                 //var myCoordinates = getTileCoordinate(column, row, 0, (animationTime / animationTimeTotal) * shift);
                 var myCoordinates = getTileCoordinate(column, row, 0, (animationTime / animationTimeTotal) * shift);
 
                 // Check if there is a tile present
-                // BROKEN
-                if (gameGrid.tiles[column][row].type >= 0) {
-                    // Get the color of the tile
-                    var myColumn = tilecolors[gameGrid.tiles[column][row].type];
+                // // BROKEN
+                // if (level.tiles[column][row].type >= 0) {
+                //     // Get the color of the tile
+                //     var myColumn = tilecolors[level.tiles[column][row].type];
 
-                    // Draw the tile using the color
-                    drawTile(myCoordinates.tilex, myCoordinates.tiley, myColumn[0], myColumn[1], myColumn[2]);
-                }
+                //     // Draw the tile using the color
+                //     drawTile(myCoordinates.tilex, myCoordinates.tiley, myColumn[0], myColumn[1], myColumn[2]);
+                // }
 
                 // Draw the selected tile
-                if (gameGrid.selectedtile.selected) {
-                    if (gameGrid.selectedtile.column == column && gameGrid.selectedtile.row == row) {
+                if (level.selectedtile.selected) {
+                    if (level.selectedtile.column == column && level.selectedtile.row == row) {
                         // Draw a red tile
                         drawTile(myCoordinates.tilex, myCoordinates.tiley, 255, 0, 0);
                     }
@@ -297,8 +325,8 @@ window.onload = function() {
     // Get the tile coordinate
 
     function getTileCoordinate(column, row, columnOffset, rowOffset) {
-        var tilex = gameGrid.x + (column + columnOffset) * gameGrid.TILEWIDTH;
-        var tiley = gameGrid.y + (row + rowOffset) * gameGrid.TILEHEIGHT;
+        var tilex = level.x + (column + columnOffset) * level.TILEWIDTH;
+        var tiley = level.y + (row + rowOffset) * level.TILEHEIGHT;
         return { tilex: tilex, tiley: tiley};
     }
 
@@ -306,27 +334,11 @@ window.onload = function() {
     // don't forget the gamegrid
     function drawTile(x, y, r, g, b) {
         context.fillStyle = "rgb(" + r + "," + g + "," + b + ")";
-        context.fillRect(x + 2, y + 2, gameGrid.TILEWIDTH - 4, gameGrid.TILEHEIGHT - 4);
-        //gameGrid.tiles[x][y]
+        context.fillRect(x + 2, y + 2, level.TILEWIDTH - 4, level.TILEHEIGHT - 4);
+        //level.tiles[x][y]
     }
 
-    // Render clusters(matches)
-    function renderClusters() {
-        for (var thisFoundCluster=0; thisFoundCluster<foundClusters.length; thisFoundCluster++) {
-            // Calculate the tile coordinates
-            var coord = getTileCoordinate(foundClusters[thisFoundCluster].column, foundClusters[thisFoundCluster].row, 0, 0);
 
-            if (foundClusters[thisFoundCluster].horizontal) {
-                // Draw a horizontal line
-                context.fillStyle = "#00ff00";
-                context.fillRect(coord.tilex + gameGrid.TILEWIDTH/2, coord.tiley + gameGrid.TILEHEIGHT/2 - 4, (foundClusters[thisFoundCluster].length - 1) * gameGrid.TILEWIDTH, 8);
-            } else {
-                // Draw a vertical line
-                context.fillStyle = "#0000ff";
-                context.fillRect(coord.tilex + gameGrid.TILEWIDTH/2 - 4, coord.tiley + gameGrid.TILEHEIGHT/2, 8, (foundClusters[thisFoundCluster].length - 1) * gameGrid.TILEHEIGHT);
-            }
-        }
-    }
 
     // Render moves
     // obsolete - turn into "draw box around tile" thing
@@ -339,8 +351,8 @@ window.onload = function() {
             // Draw a line from tile 1 to tile 2
             context.strokeStyle = "#ff0000";
             context.beginPath();
-            context.moveTo(coord1.tilex + gameGrid.TILEWIDTH/2, coord1.tiley + gameGrid.TILEHEIGHT/2);
-            context.lineTo(coord2.tilex + gameGrid.TILEWIDTH/2, coord2.tiley + gameGrid.TILEHEIGHT/2);
+            context.moveTo(coord1.tilex + level.TILEWIDTH/2, coord1.tiley + level.TILEHEIGHT/2);
+            context.lineTo(coord2.tilex + level.TILEWIDTH/2, coord2.tiley + level.TILEHEIGHT/2);
             context.stroke();
         }
     }
@@ -348,9 +360,10 @@ window.onload = function() {
     // Start a new game
     function startNewGame() {
         console.clear();
-        console.log("starting new game...");
+        console.log("START NEW GAME");
         myScore = 0; // Reset score
-        gameState = currentGameState.ready; // Set the gamestate to ready
+        //gameState = currentGameState.ready; // Set the gamestate to ready
+        gamestate = gamestates.ready;        
         isGameOver = false; // Reset game over
         createLevel(); // Create the level
 
@@ -361,15 +374,15 @@ window.onload = function() {
     }
 
     // Create a random level
+    // populate tiles
     function createLevel() {
-        var operationFinished = false;
-        console.log('creating level');
-            for (var column=0; column<gameGrid.TOTALCOLUMNS; column++) {
-                for (var row=0; row<gameGrid.TOTALROWS; row++) {
-                    gameGrid.tiles[column][row].type = returnRandomTileColor();
+        console.log('CREATE LEVEL');
+            for (var column=0; column<level.TOTALCOLUMNS; column++) {
+                for (var row=0; row<level.TOTALROWS; row++) {
+                    level.tiles[column][row].type = returnRandomTileColor();
+                    console.log(`TYPE OUTPUT: ${level.tiles[column][row].type}`);
                 }
             }
-        operationFinished = true;
         }
     
 
@@ -382,49 +395,60 @@ window.onload = function() {
     }
 
 
+        // Swap two tiles in the level
+    // depreciate this
+    // or better yet, use for falling function
+    function swapTwoTiles(x1, y1, x2, y2) {
+        var typeswap = level.tiles[x1][y1].type;
+        level.tiles[x1][y1].type = level.tiles[x2][y2].type;
+        level.tiles[x2][y2].type = typeswap;
+    }
 
 
     // Find available moves
     function findMoves() {
         // Reset moves
         moves = []
-        log('finding moves');
+        console.log('finding moves');
 
         // Check horizontal swaps
-        for (var row=0; row<gameGrid.TOTALROWS; row++) {
-            for (var column=0; column<gameGrid.TOTALCOLUMNS-1; column++) {
+        for (var row=0; row<level.TOTALROWS; row++) {
+            for (var column=0; column<level.TOTALCOLUMNS-1; column++) {
                 // Swap, find clusters and swap back
                 swapTwoTiles(column, row, column+1, row);
-                findClusters();
+                //findClusters();
                 swapTwoTiles(column, row, column+1, row);
 
-                // Check if the swap made a cluster
-                if (foundClusters.length > 0) {
-                    // Found a move
-                    moves.push({column1: column, row1: row, column2: column+1, row2: row});
-                }
+                // // Check if the swap made a cluster
+                // if (foundClusters.length > 0) {
+                //     // Found a move
+                //     moves.push({column1: column, row1: row, column2: column+1, row2: row});
+                // }
             }
         }
 
         // Check vertical swaps
-        for (var column=0; column<gameGrid.TOTALCOLUMNS; column++) {
-            for (var row=0; row<gameGrid.TOTALROWS-1; row++) {
+        for (var column=0; column<level.TOTALCOLUMNS; column++) {
+            for (var row=0; row<level.TOTALROWS-1; row++) {
                 // Swap, find clusters and swap back
                 swapTwoTiles(column, row, column, row+1);
-                findClusters();
+                //findClusters();
                 swapTwoTiles(column, row, column, row+1);
 
-                // Check if the swap made a cluster
-                if (foundClusters.length > 0) {
-                    // Found a move
-                    moves.push({column1: column, row1: row, column2: column, row2: row+1});
-                }
+                // // Check if the swap made a cluster
+                // if (foundClusters.length > 0) {
+                //     // Found a move
+                //     moves.push({column1: column, row1: row, column2: column, row2: row+1});
+                // }
             }
         }
 
         // Reset clusters
         foundClusters = []
     }
+
+
+    function findClusters(){}
 
     // Loop over the cluster tiles and execute a function
     function loopClusters(func) {
@@ -450,11 +474,11 @@ window.onload = function() {
     function removeMarkedTiles() {
         log("removing marked tiles...");
         // Change the type of the tiles to -1, indicating a removed tile
-        //loopClusters(function(index, column, row, cluster) { gameGrid.tiles[column][row].type = -1; });
-        for (var column=0; column<gameGrid.TOTALCOLUMNS; column++) {
+        //loopClusters(function(index, column, row, cluster) { level.tiles[column][row].type = -1; });
+        for (var column=0; column<level.TOTALCOLUMNS; column++) {
              var shift = 0;
-             for (var row=gameGrid.TOTALROWS-1; row>=0; row--) {
-                 if (gameGrid[column][row].type == -1)
+             for (var row=level.TOTALROWS-1; row>=0; row--) {
+                 if (level[column][row].type == -1)
                     {
                         //erase tile
                         eraseTile(column,row);
@@ -480,12 +504,12 @@ window.onload = function() {
     // keep this one
     function getMouseTile(pos) {
         // Calculate the index of the tile
-        var mouseX = Math.floor((pos.x - gameGrid.x) / gameGrid.TILEWIDTH);
-        var mouseY = Math.floor((pos.y - gameGrid.y) / gameGrid.TILEHEIGHT);
+        var mouseX = Math.floor((pos.x - level.x) / level.TILEWIDTH);
+        var mouseY = Math.floor((pos.y - level.y) / level.TILEHEIGHT);
         // Check if the tile is valid
-        if (mouseX >= 0 && mouseX < gameGrid.TOTALCOLUMNS && mouseY >= 0 && mouseY < gameGrid.TOTALROWS) {
+        if (mouseX >= 0 && mouseX < level.TOTALCOLUMNS && mouseY >= 0 && mouseY < level.TOTALROWS) {
             // Tile is valid
-            log(`(getmousetile) tile is valid ${mouseX}  ${mouseY}`);
+            console.log(`(getmousetile) tile is valid ${mouseX}  ${mouseY}`);
             return {
                 valid: true,
                 x: mouseX,
@@ -551,13 +575,11 @@ window.onload = function() {
         return {
             x: Math.round((event.clientX - boundingRectangle.left)/(boundingRectangle.right - boundingRectangle.left)*canvas.width),
             y: Math.round((event.clientY - boundingRectangle.top)/(boundingRectangle.bottom - boundingRectangle.top)*canvas.height)
-        };
-
-
-        
+        };        
     }
 
-    init(0);
+    console.log("PRE INIT--");
+    init();
 }
     
     
