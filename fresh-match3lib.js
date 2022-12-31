@@ -24,12 +24,12 @@ window.onload = function() {
     var TILEWIDTH=  40  // Visual width of a tile
     var TILEHEIGHT=  40 // Visual height of a tile    
 
-    var gameButtons = [ { x: 30, y: 270, width: 150, height: 50, text: "New Game"},
+    var Buttons = [ { x: 30, y: 270, width: 150, height: 50, text: "New Game"},
                     { x: 30, y: 330, width: 150, height: 50, text: "Show Moves"}];    
 
 
     // Game states
-    var gamestates = { init: 0, ready: 1, resolve: 2 };
+    var gamestates = { init: 0, ready: 1, resolve: 2, inprogress: 3 };
     var gamestate = gamestates.init;       
 
     // are we using this?
@@ -74,7 +74,7 @@ window.onload = function() {
     function startNewGame(){
         console.log('starting new game');
         drawTheGrid(); 
-
+        gamestate = gamestates.inprogress;
     }
 
 
@@ -113,14 +113,14 @@ window.onload = function() {
     // runs quite often
     function drawButtons() {
         console.log("drawing buttons");
-        for (var thisButton=0; thisButton<gameButtons.length; thisButton++) {
+        for (var thisButton=0; thisButton<Buttons.length; thisButton++) {
             context.fillStyle = "#000000";
-            context.fillRect(gameButtons[thisButton].x, gameButtons[thisButton].y, gameButtons[thisButton].width, gameButtons[thisButton].height);
+            context.fillRect(Buttons[thisButton].x, Buttons[thisButton].y, Buttons[thisButton].width, Buttons[thisButton].height);
 
             context.fillStyle = "#ffffff";
             context.font = "18px Verdana";
-            var textdim = context.measureText(gameButtons[thisButton].text);
-            context.fillText(gameButtons[thisButton].text, gameButtons[thisButton].x + (gameButtons[thisButton].width-textdim.width)/2, gameButtons[thisButton].y+30);
+            var textdim = context.measureText(Buttons[thisButton].text);
+            context.fillText(Buttons[thisButton].text, Buttons[thisButton].x + (Buttons[thisButton].width-textdim.width)/2, Buttons[thisButton].y+30);
         }
     }    
 
@@ -150,23 +150,22 @@ window.onload = function() {
     }
 
 
-    // just draw grid tiles
+    // draw grid tiles
     function drawTheGrid(){
         console.log('drawing the grid of tiles');        
         for (var column=0; column<TOTALCOLUMNS; column++) {
             for (var row=0; row<TOTALROWS; row++) {
                         var myCoordinates = getTileCoordinate(column, row, 6, 3);     
                         var thisColor = level.tiles[row][column].tileColor;
-                        console.log(`Color I will be drawing: ${thisColor}`); // works                        
+                        //console.log(`Color I will be drawing: ${thisColor}`); // works                        
                         drawTile(myCoordinates.tilex, myCoordinates.tiley, thisColor);                    
                 }
             }
     }
 
     // Draw a tile with a color
-    // don't forget the gamegrid    
     function drawTile_old(x, y, redValue, greenValue, blueValue) {
-        console.log(`>>drawing tile ${x} ${y} red:${redValue} green:${greenValue} blue:${blueValue}`);
+        //console.log(`>>drawing tile ${x} ${y} red:${redValue} green:${greenValue} blue:${blueValue}`);
         context.fillStyle = "rgb(" + redValue + "," + greenValue + "," + blueValue + ")";
         context.fillRect(x + 2, y + 2, TILEWIDTH - 4, TILEHEIGHT - 4);
     }
@@ -174,12 +173,12 @@ window.onload = function() {
     // Draw a tile with a color
     // don't forget the gamegrid    
     function drawTile(x, y, tileColor) {
-        console.log(`incoming tile color value: ${tileColor} output: ${tilecolors[tileColor]}`);
+        //console.log(`incoming tile color value: ${tileColor} output: ${tilecolors[tileColor]}`);
         var snapColor = tilecolors[tileColor];
         var Reddie = snapColor[0];
         var bluie = snapColor[1];
         var greenie  = snapColor[2];
-        console.log(`>>drawing tile ${x} ${y} red:${Reddie} green:${greenie} blue:${bluie}`);
+        //console.log(`>>drawing tile ${x} ${y} red:${Reddie} green:${greenie} blue:${bluie}`);
         context.fillStyle = "rgb(" + Reddie + "," + greenie + "," + bluie + ")";
         context.fillRect(x + 2, y + 2, TILEWIDTH - 4, TILEHEIGHT - 4);
     }
@@ -213,6 +212,7 @@ window.onload = function() {
         }        
         console.log('init FINISHED');
         drawGUI(); // works
+        gamestate = gamestates.ready;
         //drawGridFrame();
         // draw gme board
     }
@@ -222,23 +222,24 @@ window.onload = function() {
 
     // CLICK FUNCTION EVENT
     function onMouseDown(event){
-        console.log('onmousedown set');
-        var mousePosition = getMousePosition(canvas, event); // Get the mouse position
-        mt = getMouseTile(mousePosition);
+        //console.log('onmousedown set');
+        var mousePos = getMousePosition(canvas, event); // Get the mouse position
+        mt = getMouseTile(mousePos);
         // GAME BUTTON CLICK(META)
-        for (var i=0; i<gameButtons.length; i++) {
-            if (mousePosition.x >= gameButtons[i].x && mousePosition.x < gameButtons[i].x+gameButtons[i].width &&
-                mousePosition.y >= gameButtons[i].y && mousePosition.y < gameButtons[i].y+gameButtons[i].height) {
+        for (var aGameButton=0; aGameButton<Buttons.length; aGameButton++) {
+            if (mousePos.x >= Buttons[aGameButton].x && mousePos.x < Buttons[aGameButton].x+Buttons[aGameButton].width &&
+                mousePos.y >= Buttons[aGameButton].y && mousePos.y < Buttons[aGameButton].y+Buttons[aGameButton].height)
+                 {
+                    // play the tile
+                        console.log(`TILE CLICKED`);
 
-                // Button i was clicked
-                if (i == 0) {
-                    // New Game
-                    startNewGame();
-                } else if (i == 1) {
-                    // Show Moves
-                    //showMoves = !showMoves;
-                    //gameButtons[i].text = (showMoves?"Hide":"Show") + " Moves";
-                } 
+                        // Button i was clicked
+                    if (aGameButton == 0) {
+                        startNewGame();
+                    } else if (aGameButton == 1) {
+                        // presently not used
+                        console.log('show moves button clicked');
+                    } 
             }
         }
 
@@ -254,7 +255,8 @@ window.onload = function() {
         // Check if the tile is valid
         if (mouseX >= 0 && mouseX < TOTALCOLUMNS && mouseY >= 0 && mouseY < TOTALROWS) {
             // Tile is valid
-            console.log(`(getmousetile) tile is valid ${mouseX}  ${mouseY}`);
+            console.log(`(getmousetile) tile is clicked  x:${mouseX}  ${mouseY}`);
+            playTile(mouseX,mouseY); // might move elsewhere
             return {
                 validTileClick: true,
                 x: mouseX,
@@ -263,15 +265,35 @@ window.onload = function() {
         }
 
         console.log("(getmousetile) no  valid tiles(clicked outside)");
-        // No valid tile
         return {            
             valid: false,
             x: 0,
             y: 0
         };
     }
+
+    // actually do something
+    function playTile(xVal, yVal){
+        // check neighbors
+                
+
+
+    }
+
+    function checkNeighbors(xval,yVal){
+        var foundMatches = 0; // if >0, we got neighbors
+        var playTile = level.tiles[xval][yVal];
+        var playTileColor = level.tiles[xval][yVal].tileColor // TODO; tile TYPE!!
+        // check horizontally
+        
+        // leftmost tile(check 1 right)
+
+
+        // rightmost tile(check one left)
+        
+
+    }
     
-
-
+    // primary entry point
     init();
 }    
