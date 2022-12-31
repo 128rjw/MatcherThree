@@ -141,7 +141,7 @@
             }
         }
 
-
+    }
 
 
     // Find clusters in the level
@@ -187,6 +187,7 @@
                 }
             }
 
+        }}
 
     // Shift tiles and insert new tiles
     // TODO: shift downward
@@ -209,4 +210,4 @@
             }
         }
     }
-        }
+
