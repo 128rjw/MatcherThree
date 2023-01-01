@@ -51,8 +51,7 @@ window.onload = function() {
                       [128, 128, 255],
                       [255, 255, 128],
                       [255, 128, 255],
-                      [128, 255, 255],
-                      [0, 0, 0]];    
+                      [128, 255, 255]];    
 
 
 
@@ -66,7 +65,7 @@ window.onload = function() {
             this.wilbeDeleted = false; // mark when it will be eliminated
             this.tileType = myTileTypes.plainTile;
             this.tileColor  = returnRandomTileColor(); 
-            console.log(`*** tile constructor initted  ${this.tileType.toString()}    ****`);
+            //console.log(`*** tile constructor initted  ${this.tileType.toString()}    ****`);
         }
     }
 
@@ -149,52 +148,46 @@ window.onload = function() {
 
     // draw grid tiles
     function drawTheGrid(){
-        console.log('drawing the grid of tiles');        
+        console.log('() drawing the grid of tiles and such');        
         for (var column=0; column<TOTALCOLUMNS; column++) {
             for (var row=0; row<TOTALROWS; row++) {
                         var myCoordinates = getTileCoordinate(column, row, 6, 3);     
                         var Zobject = level.tiles[row][column];
-                        console.log(`Color I will be drawing: ${Zobject.tileType.toString()}`); // works                         
+                        //console.log(`Color I will be drawing: ${Zobject.tileType.toString()}`); // works                         
                         drawTile(myCoordinates.tilex, myCoordinates.tiley, Zobject);                    
                 }
             }
     }
 
-    // Draw a tile with a color
-    function drawTile_old(x, y, redValue, greenValue, blueValue) {
-        //console.log(`>>drawing tile ${x} ${y} red:${redValue} green:${greenValue} blue:${blueValue}`);
-        context.fillStyle = "rgb(" + redValue + "," + greenValue + "," + blueValue + ")";
-        context.fillRect(x + 2, y + 2, TILEWIDTH - 4, TILEHEIGHT - 4);
-    }
 
     // Draw a tile with a color
     // don't forget the gamegrid    
     function drawTile(x, y, tileObject) {
-        var Reddie = 0;
-        var bluie = 0;
-        var greenie = 0;
-        console.log(`draw tile type: ${tileObject.tileType.toString()}`); // UNDEFINED!?!?
+        var redValue = 0;
+        var blueValue = 0;
+        var greenValue = 0;
+        //console.log(`drawing tile ${tileObject.tileType.toString()}`);
         if (tileObject.tileType == myTileTypes.plainTile )
         {
             var tileob = tilecolors[tileObject.tileColor];
-            console.log(`drawing plain tile: ${tileob.tileColor}`);            
-            Reddie = tileob[0];
-            bluie = tileob[1];
-            greenie  = tileob[2];
+            //console.log(`drawing plain tile: ${level.tiles[x][y].tileColor}`);            
+            redValue = tileob[0];
+            blueValue = tileob[1];
+            greenValue  = tileob[2];
         }
         else if (tileObject.tileType == myTileTypes.empty)
         {
             console.log(`drawing empty`);
-            Reddie = 0; 
-            bluie = 0;
-            greenie = 0;
+            redValue = 0; 
+            blueValue = 0;
+            greenValue = 0;
         }
         else
         {
             console.log(` UNKNOWN TILE TYPE ${tileObject.tileType} `);
         }
-        console.log(`>>drawing tile ${x} ${y} red:${Reddie} green:${greenie} blue:${bluie} type:${tileObject.tileType.toString()}`); // borked anyway
-        context.fillStyle = "rgb(" + Reddie + "," + greenie + "," + bluie + ")";
+        //console.log(`>>drawing tile ${x} ${y} red:${Reddie} green:${greenie} blue:${bluie} type:${tileObject.tileType.toString()}`); // borked anyway
+        context.fillStyle = "rgb(" + redValue + "," + greenValue + "," + blueValue + ")";
         context.fillRect(x + 2, y + 2, TILEWIDTH - 4, TILEHEIGHT - 4);
     }
 
@@ -220,15 +213,12 @@ window.onload = function() {
             level.tiles[thisColumn] = [];
             for (var thisRow=0; thisRow<TOTALROWS; thisRow++) {
                 level.tiles[thisColumn][thisRow] =  new gameTile(thisColumn,thisRow);
-                //console.log(`setting TILE ${thisColumn}  ${thisRow}`);
-                //var  x = level.tiles[thisColumn][thisRow];
                 level.tiles[thisColumn][thisRow].tileColor = returnRandomTileColor();
             }
         }        
         console.log('init FINISHED');
         drawGUI(); // works
         gamestate = gamestates.ready;
-        //drawGridFrame();
         // draw gme board
     }
 
@@ -270,7 +260,7 @@ window.onload = function() {
         // Check if the tile is valid
         if (mouseX >= 0 && mouseX < TOTALCOLUMNS && mouseY >= 0 && mouseY < TOTALROWS) {
             // Tile is valid
-            console.log(`(getmousetile) tile is clicked  x:${mouseX}  ${mouseY}`);
+            //console.log(`(getmousetile) tile is clicked  x:${mouseX}  ${mouseY}`);
             playTile(mouseX,mouseY); // might move elsewhere
             return {
                 validTileClick: true,
@@ -289,25 +279,29 @@ window.onload = function() {
 
     // actually do something
     // this constitutes a whole move
-    function playTile(xVal, yVal){        
-        // check neighbors
-        checkNeighbors(xVal,yVal);                                            
-        document.title = "total moves " + gameRound.totalMoves.toString(); // only add moves when successful move
-        if (countTobeDeletedPieces>0)
+    function playTile(xVal, yVal){   
+        gameRound.totalMatchesFound = 0;      
+        checkNeighbors(xVal,yVal);                                                    
+        console.log(`total matches found: ${gameRound.totalMatchesFound}`);
+        if (gameRound.totalMatchesFound>0)
             { 
+                console.log('found counted pieces to delete'); // finally this works                
+                fallPiecesDown();
                 eraseMarkedTiles();
+                drawTheGrid();
+                gameRound.totalMoves+=1; 
             }
-        gameRound.totalMoves+=1; // rough implementation
-
-
+        else{
+            console.log(`no pair tile(s) found `);
+            //gameRound.totalMatchesFound=0;
+        }
     }
 
+    // this is useless
     function eraseMarkedTiles(){
         console.log('erasing marked tiles');
         for (var column=0; column<TOTALCOLUMNS; column++) {
             for (var row=0; row<TOTALROWS; row++) {
-                        level.tiles[row][column].tileType = myTileTypes.empty;
-                        console.log(`Color I will be drawing: ${level.tiles[row][column].tileType}`); 
                         drawTile(row, column, level.tiles[row][column]);
                 }
             }         
@@ -316,16 +310,16 @@ window.onload = function() {
 
     // do we even need to FallPiecesDown()?
     function countTobeDeletedPieces(){
-        var totalFound =0;
         for (var column=0; column<TOTALCOLUMNS; column++) {
             for (var row=0; row>TOTALROWS; row++) {
-                        if (level.tiles[row][column].wilbeDeleted == true)
+                        if (level.tiles[row][column].tileType == empty)
                             {
-                                totalFound+=1;
+                                console.log(`FOUND TILE TO DELETE: ${totalFound} ` );
+                                gameRound.totalMatchesFound+=1;
                             }        
                 }
         }
-        return totalFound;         
+        return gameRound.totalMatchesFound;         
     }
 
 
@@ -337,55 +331,76 @@ window.onload = function() {
             // scan UP to DOWN                        
             for (var row=0; row>TOTALROWS; row++) {
                         if (level.tiles[row+1][column].type = tileType.empty)
-                        level.tiles[row][column].  type = empty;
-                        var thisColor = level.tiles[row][column].tileColor;
-                        //console.log(`Color I will be drawing: ${thisColor}`); // works                        
-                        drawTile(myCoordinates.tilex, myCoordinates.tiley, thisColor);                    
+                            var thisColor = level.tiles[row][column].tileColor;
+                            //console.log(`Color I will be drawing: ${thisColor}`); // works                        
+                            drawTile(myCoordinates.tilex, myCoordinates.tiley, thisColor);                    
                 }
             }         
     }
 
+    function zapTile(x,y){
+        gameRound.totalMatchesFound+=1;  // mark trip up
+        level.tiles[x][y].tileType == myTileTypes.empty;   
+        console.log(`${gameRound.totalMatchesFound.toString()} zapping tile ${x} ${y}`);
+        drawTile(x,y,level.tiles[x][y]);
+    }
 
 
-    function checkNeighbors(xval,yVal){
-        var foundMatches = 0; // if >0, we got neighbors
-        var playTile = level.tiles[xval][yVal]; // original clicker
-        console.log(`play tile's tile color: ${playTile.tileColor}`);
-        var playTileColor = level.tiles[xval][yVal].tileColor // TODO; tile TYPE!!
-        // check horizontally    
-        if (xval<TOTALCOLUMNS){  // leftmost
-            // EAST MATCH
-            if (level.tiles[xval+1][yVal].tileColor == playTile.tileColor)
-                {
-                    console.log(`east match found ${xval} ${yVal}`);
-                    foundMatches+=1;  // mark trip up
-                    // mark neighbor tile for deletion
-                    level.tiles[xval+1][yVal].markTileToDelete = true; 
-                }
-        }
 
-        // check west(if rightmost)
-        // wow this is bad
-        if (xval<=(TOTALCOLUMNS))
+    function checkNeighbors(XvALUE,yVaLUE){
+        var playTile = level.tiles[XvALUE][yVaLUE]; // original clicker        
+        if (playTile.tileType == myTileTypes.plainTile)
         {
-            // WEST MATCH
-            if (level.tiles[xval-1][yVal].tileColor == playTile.tileColor)
+            // edge case - leftmost - check left to right
+            if (XvALUE == 0)
+            {
+                if (level.tiles[1][yVaLUE].tileColor == playTile.tileColor)
                 {
-                    console.log(`east match found ${xval} ${yVal}`);
-                    foundMatches+=1;  // mark trip up
-                    level.tiles[xval-1][yVal].markTileToDelete = true; 
-                }            
+                    zapTile(1,yVaLUE);
+                }           
+            }
+            else if (XvALUE < TOTALCOLUMNS-1)
+            {                
+                if (level.tiles[XvALUE+1][yVaLUE].tileColor == playTile.tileColor)
+                    {
+                        zapTile(XvALUE+1,yVaLUE);
+                    }
+            }
+
+
+            // VERTICAL MATCHES
+            // EDGE CASE
+            if (yVaLUE == 0 && level.tiles[XvALUE][yVaLUE+1].tileColor == playTile.tileColor )
+            {
+                console.log(`south match found ${XvALUE},${yVaLUE+1}`);
+                zapTile(XvALUE,yVaLUE+1);
+            }
+            else if (yVaLUE>0 || yVaLUE<(TOTALROWS-2))
+            {
+                if (level.tiles[XvALUE][yVaLUE+1].tileColor == playTile.tileColor){
+                    console.log(`south match found ${XvALUE},${yVaLUE+1}`);
+                    zapTile(XvALUE,yVaLUE+1);
+                }
+            }                
+
+            //UPWARD MATCH(NORTH)
+            if (yVaLUE==(TOTALROWS-1)){
+                if (level.tiles[XvALUE][yVaLUE-1].tileColor == playTile.tileColor){
+                    console.log(`north match found ${XvALUE},${yVaLUE+1}`);
+                    zapTile(XvALUE,yVaLUE-1);
+                }                
+            }
         }
 
+        
         // if any match was found, mark ITSELF to be deleted
-        if (foundMatches>0){
-            console.log(`\tself marking for del ${foundMatches}`);
-            level.tiles[xval][yVal].markTileToDelete = true; 
+        if (gameRound.totalMatchesFound>0){
+                console.log(`\tself marking for del ${gameRound.totalMatchesFound}`); // works!
+                zapTile(XvALUE,yVaLUE);
+                //drawTheGrid();
         }
-        
-        // rightmost tile(check one left)
-        
 
+        console.log('done checking for neighbors');
     }
     
     // primary entry point
