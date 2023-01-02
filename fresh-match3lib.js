@@ -81,7 +81,7 @@ window.onload = function() {
     //outer function
     function drawGUI(){
         console.log("drawing GUI(whole thing)");        
-        drawGridFrame();
+        drawGameGUI();
         drawButtons();  // works   
         drawTheGrid(); // draw tiles
     }
@@ -91,14 +91,14 @@ window.onload = function() {
     // Draw a frame with a border
     // blanks it all out
     // fun first?
-    function drawGridFrame() {
+    function drawGameGUI() {
         console.log('drawing grid frame');
         context.fillStyle = "#d0d0d0";
         context.fillRect(0, 0, canvas.width, canvas.height);
         context.fillStyle = "#e8eaec";
         context.fillRect(1, 1, canvas.width-2, canvas.height-2);
 
-        // Draw header block?
+        // Draw header block
         context.fillStyle = "#303030";
         context.fillRect(0, 0, canvas.width, 65);
 
@@ -110,32 +110,35 @@ window.onload = function() {
     }
 
     // Draw buttons
-    // runs quite often
+    // runs quite often(refresh?)
     function drawButtons() {
         console.log("drawing buttons");
         for (var thisButton=0; thisButton<Buttons.length; thisButton++) {
             context.fillStyle = "#000000";
-            context.fillRect(Buttons[thisButton].x, Buttons[thisButton].y, Buttons[thisButton].width, Buttons[thisButton].height);
+            context.fillRect(Buttons[thisButton].x, Buttons[thisButton].y, 
+                Buttons[thisButton].width, Buttons[thisButton].height);
 
             context.fillStyle = "#ffffff";
             context.font = "18px Verdana";
             var textdim = context.measureText(Buttons[thisButton].text);
-            context.fillText(Buttons[thisButton].text, Buttons[thisButton].x + (Buttons[thisButton].width-textdim.width)/2, Buttons[thisButton].y+30);
+            context.fillText(Buttons[thisButton].text,
+                 Buttons[thisButton].x + (Buttons[thisButton].width-textdim.width)/2, 
+            Buttons[thisButton].y+30);
         }
     }    
 
     
     // Get the mouse position
     function getMousePosition(canvas, event) {
-        var boundingRectangle = canvas.getBoundingClientRect();
+        var boundRect = canvas.getBoundingClientRect();
         return {
-            x: Math.round((event.clientX - boundingRectangle.left)/(boundingRectangle.right - boundingRectangle.left)*canvas.width),
-            y: Math.round((event.clientY - boundingRectangle.top)/(boundingRectangle.bottom - boundingRectangle.top)*canvas.height)
+            x: Math.round((event.clientX - boundRect.left)/(boundRect.right - boundRect.left)*canvas.width),
+            y: Math.round((event.clientY - boundRect.top)/(boundRect.bottom - boundRect.top)*canvas.height)
         };        
     }
 
 
-    // get exact  coordinates
+    // get exact  coordinates(for drawing on canvas)
     function getTileCoordinate(column, row, columnOffset, rowOffset) {
         var thisTile = level.tiles[column][row];   
         //console.log(` (getTileColor) x: ${thisTile.xcor} y:${thisTile.ycor}`);
@@ -148,13 +151,16 @@ window.onload = function() {
 
     // draw grid tiles
     function drawTheGrid(){
-        console.log('() drawing the grid of tiles and such');        
+        console.log(' - REDRAWING TILE GRID - ');     
+        // TODO: erase grid
+        
+        // TODO: draw any under-canvas
+
+        // draw the tiles
         for (var column=0; column<TOTALCOLUMNS; column++) {
             for (var row=0; row<TOTALROWS; row++) {
                         var myCoordinates = getTileCoordinate(column, row, 6, 3);     
-                        var Zobject = level.tiles[row][column];
-                        //console.log(`Color I will be drawing: ${Zobject.tileType.toString()}`); // works                         
-                        drawTile(myCoordinates.tilex, myCoordinates.tiley, Zobject);                    
+                        drawTile(myCoordinates.tilex, myCoordinates.tiley, level.tiles[row][column]);                    
                 }
             }
     }
@@ -206,7 +212,6 @@ window.onload = function() {
     {   
         console.clear(); 
         console.log("MAIN INIT");
-        console.log("*** initting events ***");
         canvas.addEventListener("mousedown", onMouseDown);  // keep
         // mandatory
         for (var thisColumn=0; thisColumn<TOTALCOLUMNS; thisColumn++) {
@@ -215,11 +220,10 @@ window.onload = function() {
                 level.tiles[thisColumn][thisRow] =  new gameTile(thisColumn,thisRow);
                 level.tiles[thisColumn][thisRow].tileColor = returnRandomTileColor();
             }
-        }        
-        console.log('init FINISHED');
+        }                
         drawGUI(); // works
         gamestate = gamestates.ready;
-        // draw gme board
+        console.log('init FINISHED');
     }
 
 
@@ -227,7 +231,6 @@ window.onload = function() {
 
     // CLICK FUNCTION EVENT
     function onMouseDown(event){
-        //console.log('onmousedown set');
         var mousePos = getMousePosition(canvas, event); // Get the mouse position
         mt = getMouseTile(mousePos);
         // GAME BUTTON CLICK(META)
@@ -236,14 +239,14 @@ window.onload = function() {
                 mousePos.y >= Buttons[aGameButton].y && mousePos.y < Buttons[aGameButton].y+Buttons[aGameButton].height)
                  {
                     // play the tile
-                        console.log(`TILE CLICKED`);
-
+                        //console.log(`TILE CLICKED`); // incorrect assertion
                         // Button i was clicked
                     if (aGameButton == 0) {
                         startNewGame();
                     } else if (aGameButton == 1) {
                         // presently not used
-                        console.log('show moves button clicked');
+                        //console.log('show moves button clicked');
+                        drawTheGrid();
                     } 
             }
         }
@@ -269,7 +272,7 @@ window.onload = function() {
             };
         }
 
-        console.log("(getmousetile) no  valid tiles(clicked outside)");
+        //console.log("(getmousetile) button clicked");
         return {            
             valid: false,
             x: 0,
@@ -281,13 +284,12 @@ window.onload = function() {
     // this constitutes a whole move
     function playTile(xVal, yVal){   
         gameRound.totalMatchesFound = 0;      
-        checkNeighbors(xVal,yVal);                                                    
+        checkNeighbors(xVal,yVal);  // needs improvement                                             
         console.log(`total matches found: ${gameRound.totalMatchesFound}`);
         if (gameRound.totalMatchesFound>0)
             { 
-                console.log('found counted pieces to delete'); // finally this works                
+                console.log(`found counted pieces to delete ${gameRound.totalMatchesFound} `); // finally this works                
                 fallPiecesDown();
-                eraseMarkedTiles();
                 drawTheGrid();
                 gameRound.totalMoves+=1; 
             }
@@ -302,7 +304,7 @@ window.onload = function() {
         console.log('erasing marked tiles');
         for (var column=0; column<TOTALCOLUMNS; column++) {
             for (var row=0; row<TOTALROWS; row++) {
-                        drawTile(row, column, level.tiles[row][column]);
+                        //drawTile(row, column, level.tiles[row][column]);
                 }
             }         
     }
@@ -324,16 +326,20 @@ window.onload = function() {
 
 
     // go column by column 
+    // still need fresh tiles for absent
+    // might have to do a transplant, adding type + color
+    // 
     function fallPiecesDown(){
         for (var column=0; column<TOTALCOLUMNS; column++) {
             console.log(`falling pieces for column ${column}`);
 
             // scan UP to DOWN                        
-            for (var row=0; row>TOTALROWS; row++) {
+            for (var row=0; row>TOTALROWS-1; row++) {
                         if (level.tiles[row+1][column].type = tileType.empty)
-                            var thisColor = level.tiles[row][column].tileColor;
-                            //console.log(`Color I will be drawing: ${thisColor}`); // works                        
-                            drawTile(myCoordinates.tilex, myCoordinates.tiley, thisColor);                    
+                            // is it empty? move it down
+                            level.tiles[row][column] = level.tiles[row+1][column]; // transplant
+                            // current tile becomes empty
+                            level.tiles[row][column].tileType = myTileTypes.empty;
                 }
             }         
     }
@@ -341,8 +347,7 @@ window.onload = function() {
     function zapTile(x,y){
         gameRound.totalMatchesFound+=1;  // mark trip up
         level.tiles[x][y].tileType == myTileTypes.empty;   
-        console.log(`${gameRound.totalMatchesFound.toString()} zapping tile ${x} ${y}`);
-        drawTile(x,y,level.tiles[x][y]);
+        console.log(`${gameRound.totalMatchesFound.toString()} erasing tile ${x} ${y}`);
     }
 
 
