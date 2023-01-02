@@ -13,6 +13,7 @@ window.onload = function() {
         x: 250,         // X position of canvas?
         y: 113,         // Y position
         tiles: [],      // The two-dimensional tile array
+        score: 0,
         colorInPlay: -1, // positive - tileColor when clicked
         totalClicks: 0
     };
@@ -77,11 +78,19 @@ window.onload = function() {
             console.log(`  tile ${this.xcor},${this.ycor} erased`);
         }
 
+        Regenerate(){ 
+            this.tileType = myTileTypes.plainTile;
+            this.tileColor  = returnRandomTileColor(); 
+        }
+
 
     }
 
     function startNewGame(){
         console.log('starting new game');
+        level.totalClicks = 0; 
+        regenerateTiles(); 
+        level.targetColor = -1;        
         drawTheGrid(); 
         gamestate = gamestates.inprogress;
     }
@@ -148,10 +157,8 @@ window.onload = function() {
     // old code:
     function getTileCoordinate(column, row, columnOffset, rowOffset) {
         var thisTile = level.tiles[column][row];   
-        //console.log(` (getTileColor) x: ${thisTile.xcor} y:${thisTile.ycor}`);
         var translatedTileX =  thisTile.xcor + (column + columnOffset) * TILEWIDTH;
         var translatedTileY = thisTile.ycor + (row + rowOffset) * TILEHEIGHT;  
-        //console.log(` (getTileColor2) x: ${translatedTileX} y:${translatedTileY}`);
         return { tilex: translatedTileX, tiley: translatedTileY};
     }
 
@@ -162,33 +169,39 @@ window.onload = function() {
         console.log('drawing the grid of tiles');        
         for (var column=0; column<TOTALCOLUMNS; column++) {
             for (var row=0; row<TOTALROWS; row++) {
-                        //var myCoordinates = getTileCoordinate(column, row, 6, 3);     
-                        //console.log(`${myCoordinates.tilex} ${myCoordinates.tiley}`); // wrong
                         drawTile(row,column);                    
                 }
             }
     }
 
+    // for new games
+    function regenerateTiles(){
+        for (var column=0; column<TOTALCOLUMNS; column++) {
+            for (var row=0; row<TOTALROWS; row++) {
+                        level.tiles[column][row].Regenerate();
+                }
+            } 
+    }
 
 
     function drawTile(x,y){
         //console.log(`drawing tile x:${x} y:${y}`);
+        var myCoordinates = getTileCoordinate(x, y, 6, 3);     
         if (level.tiles[x][y].tileType  == myTileTypes.plainTile)
         {
-            console.log('RENDER TILE');
             var thisTile = level.tiles[x][y];            
             var redValue = tilecolors[thisTile.tileColor][0];
             var blueValue = tilecolors[thisTile.tileColor][1];
             var greenValue = tilecolors[thisTile.tileColor][2];
-            var myCoordinates = getTileCoordinate(x, y, 6, 3);     
+            
             context.fillStyle = "rgb(" +  redValue  + "," + blueValue + "," + greenValue + ")"; // set color
-            context.fillRect(myCoordinates.tilex + 2, myCoordinates.tiley + 2, TILEWIDTH - 4, TILEHEIGHT - 4); // actual drawing function            
-            //context.fillRect(x + 2, y + 2, TILEWIDTH - 4, TILEHEIGHT - 4); // actual drawing function            
+            context.fillRect(myCoordinates.tilex + 2, myCoordinates.tiley + 2, TILEWIDTH - 4, TILEHEIGHT - 4); 
+            //context.fillRect(x + 2, y + 2, TILEWIDTH - 4, TILEHEIGHT - 4);     
         }
         else if (level.tiles[x][y].tileType == myTileTypes.empty){
             console.log(`empty `);
             context.fillStyle = "rgb(" +  0  + "," + 0 + "," + 0 + ")"; 
-            context.fillRect(x + 2, y + 2, TILEWIDTH - 4, TILEHEIGHT - 4); // actual drawing function                        
+            context.fillRect(myCoordinates.tilex + 2, myCoordinates.tiley + 2, TILEWIDTH - 4, TILEHEIGHT - 4); 
         }
     }
 
@@ -224,12 +237,12 @@ window.onload = function() {
         for (var thisColumn=0; thisColumn<TOTALCOLUMNS; thisColumn++) {
             level.tiles[thisColumn] = []; // fresh row init(mandatory)
             for (var thisRow=0; thisRow<TOTALROWS; thisRow++) {
-                level.tiles[thisColumn][thisRow] =  new gameTile(thisColumn,thisRow);
-                //console.log(`setting TILE ${thisColumn}  ${thisRow}`);
-                //var  x = level.tiles[thisColumn][thisRow];
-                level.tiles[thisColumn][thisRow].tileColor = returnRandomTileColor();
+                level.tiles[thisColumn][thisRow] =  new gameTile(thisColumn,thisRow); // FIRST TIME INIT
+                //level.tiles[thisColumn][thisRow].tileColor = returnRandomTileColor();
             }
         }        
+
+        regenerateTiles(); // fresh board
         console.log('init FINISHED');
         drawGUI(); // works
         gamestate = gamestates.ready;
@@ -290,7 +303,10 @@ window.onload = function() {
         checkNeighbors(xVal,yVal);
         // END OF TURN
         // now redraw the screen?
-
+        fallDownPieces(); // gravity
+        
+        // refresh screen
+        drawTheGrid(); 
     }
 
 
@@ -304,24 +320,31 @@ window.onload = function() {
         for (let scanX = x+1; scanX < TOTALCOLUMNS-1; scanX++) {
             if (level.tiles[scanX][y].tileColor == targetColor)
             {
+                console.log(`EAST MATCH >>>>`);
                 foundMatches+=1;
                 level.tiles[scanX][y].eraseTile();
             }
         }
 
         // right-to-left
-        for (let scanX = x; scanX > 0; scanX--) {
-            if (level.tiles[scanX][y].tileColor == targetColor)
-            {
-                foundMatches+=1;
-                level.tiles[scanX][y].eraseTile();
-            }
-        }        
+        // for (let scanX = x-1; scanX > 0; scanX--) {
+        //     if (level.tiles[scanX-1][y].tileColor == targetColor)
+        //     {
+        //         console.log(`WEST MATCH `);
+        //         foundMatches+=1;
+        //         level.tiles[scanX][y].eraseTile();
+        //     }
+        // }        
+
+
+        // VERTICAL MATCHING
+
 
         // top to bottom
-        for (let scanY = y; scanY < TOTALROWS; scanY++) {
+        for (let scanY = y+1; scanY < TOTALROWS; scanY++) {
             if (level.tiles[x][scanY].tileColor == targetColor)
             {
+                console.log(`SOUTH MATCH`);
                 foundMatches+=1;
                 level.tiles[x][scanY].eraseTile();
             }
@@ -343,7 +366,10 @@ window.onload = function() {
         // END OF TURN(handled in next method)
     }
 
+    function fallDownPieces(){
+        console.log(`falling down the pieces`);
 
+    }
    
     
     // primary entry point
