@@ -12,13 +12,24 @@ window.onload = function() {
     var level = {
         x: 250,         // X position of canvas?
         y: 113,         // Y position
+        DIVERSITYLEVEL: 5, // how diverse are the colors? 
         tiles: [],      // The two-dimensional tile array
         score: 0,
         colorInPlay: -1, // positive - tileColor when clicked
         totalTurns: 0
     };
 
+    var thisTurn = {
+        colorInPlay: -1,
+        clickedTileX: -1,
+        clickedTileY: -1,
+        foundMatchedTiles: 0,
+        totalErasedTiles: 0
+    }
+
+
     // constants
+    var BACKGROUNDCOLOR = "#d0d0d0";
     var XCANVASOFFSET=  250         // X position of canvas?(for coords 0,0)
     var YCANVASOFFSET=  113         // Y position
     var TOTALCOLUMNS=  8     // Number of tile columns
@@ -31,15 +42,16 @@ window.onload = function() {
 
 
     // Game states
-    var gamestates = { init: 0, ready: 1, resolve: 2, inprogress: 3 };
-    var gamestate = gamestates.init;       
+    var gameStates = { init: 0, ready: 1, resolve: 2, inprogress: 3 };
+    var animationState = {};
+    var gameState = gameStates.init;       
 
-    // are we using this?
     const myTileTypes = {
         plainTile: Symbol("plainTile"),
         empty: Symbol("empty"),
         Bomb: Symbol("bomb"),
-        Unknown: Symbol("unknown")
+        horizRocket: Symbol("horizRocket"),
+        vertRocket: Symbol("vertRocket")
     }
 
     // TODO: can toggle diversity level
@@ -95,7 +107,7 @@ window.onload = function() {
         regenerateTiles(); 
         level.targetColor = -1;        
         drawTheGrid(); 
-        gamestate = gamestates.inprogress;
+        gameState = gameStates.inprogress;
     }
 
 
@@ -202,7 +214,7 @@ window.onload = function() {
         }
         else if (level.tiles[x][y].tileType == myTileTypes.empty){
             //console.log(`empty `);
-            context.fillStyle = "#d0d0d0";
+            context.fillStyle = "#d0d0d0"; // change to constant
             context.fillRect(myCoordinates.tilex + 2, myCoordinates.tiley + 2, TILEWIDTH - 4, TILEHEIGHT - 4); 
         }
         else if (level.tiles[x][y].tileType == myTileTypes.Bomb){
@@ -251,7 +263,7 @@ window.onload = function() {
         regenerateTiles(); // fresh board
         console.log('init FINISHED');
         drawGUI(); // works
-        gamestate = gamestates.ready;
+        gameState = gameStates.ready;
     }
 
 
@@ -274,7 +286,8 @@ window.onload = function() {
             }
         }
         // TODO:
-        // you can refresh things here
+        // you can refresh things here, refreshes each click
+
 
     }
     
@@ -303,15 +316,24 @@ window.onload = function() {
 
     // actually do something
     function playTile(x, y){
-        console.log(`clicking tile at ${x},${y}`);                
-        checkNeighbors(x,y); // check neighbors
-        eraseMarkedPieces();
-        // END OF TURN
-        // now redraw the screen?
-        fallDownPieces(); // gravity        
+        level.foundMatchedTiles = 0; //reset
+        //console.log(`clicking tile at ${x},${y}`);                
+        // first, is this even a clickable tile?
+        if (level.tiles[x][y].tileType == myTileTypes.plainTile)
+        {
+            checkNeighbors(x,y); // check neighbors
+            if (level.foundMatchedTiles>0){
+                eraseMarkedPieces();
+                // END OF TURN
+                fallDownPieces(); // gravity        
+            }
         // refresh screen
         drawTheGrid(); 
-
+        }
+        else
+        {
+            console.log('non-tile clicked');
+        }
         // update score
         document.title = `moves:${level.totalTurns} score:${level.score}`;
     }
@@ -319,25 +341,24 @@ window.onload = function() {
     // the big function
     //
     function checkNeighbors(x,y){
-        var foundMatches = 0; 
-        var targetColor = level.tiles[x][y].tileColor;
+        level.foundMatchedTiles = 0; 
         level.colorInPlay = level.tiles[x][y].tileColor;
         console.log(`${x},${y}   color in play: ${level.colorInPlay}`);
 
         // mark clicked tag for self-notcied in play
         level.tiles[x][y].markTileToDelete();
 
-        var scanX = x+1; 
+        var scanX = x; 
         var lastXFound = -1; //self marker
         while (scanX<TOTALCOLUMNS-1)
         {
             if (level.tiles[scanX][y].tileColor == level.colorInPlay &&
-                level.tiles[(scanX-1)][y].tileColor == level.colorInPlay)
+                level.tiles[(scanX+1)][y].tileColor == level.colorInPlay)
             {
-                console.log(`${foundMatches}  EAST MATCH >>>> ${scanX},${y}`);
+                console.log(`${level.foundMatchedTiles}  EAST MATCH >>>> ${scanX+1},${y}`);
                 lastXFound = scanX; 
-                foundMatches+=1;
-                level.tiles[scanX][y].markTileToDelete(); 
+                level.foundMatchedTiles+=1;
+                level.tiles[scanX+1][y].markTileToDelete(); 
             }            
             scanX++;
         }
@@ -345,20 +366,22 @@ window.onload = function() {
             
 
         // if we found matches, we need to mark the tile itself as 'in play'
-        if (foundMatches>0){
-            console.log(`tiles played this turn: ${foundMatches}`);
+        if (level.foundMatchedTiles>0){
+            level.tiles[x][y].markTileToDelete(); // delete self tile
+            console.log(`tiles played this turn: ${level.foundMatchedTiles}`);
             level.totalTurns+=1; 
         }
         else
         {
             console.log(`no matches found: `);
+            level.tiles[x][y].markedForPlay = false; // set it back
         }
 
         // END OF TURN(handled in next method)
     }
 
-    // converts marked to delete pieces
-    // to empty
+    // 2. erase the tiles(same as 1?)
+    // works so far
     function eraseMarkedPieces(){
         console.log('about to erase marked pieces');
         for (let row = 0; row < TOTALROWS-1; row++) {
@@ -372,22 +395,54 @@ window.onload = function() {
         }         
     }
 
-
+    // 1. mark tiles to be deleted to be erased(done in checkneighboars())
+    // 3. scan columns upward
+    //    a. find an empty tile?
+    //    b. bring down the (any) tile down one peg. 
     function fallDownPieces(){
         //console.log(`falling down the pieces`);
      
         // BOTTOM TO TOP
-        for (let row = TOTALROWS-1; row > 0; row--) {
-            //console.log(`FDP: row:${row}`);
-            for (let col = 0; col < TOTALCOLUMNS-1; col++) {
 
-                //level.tiles[row][col].markTileToDelete(); 
+        for (let col = 0; col < TOTALCOLUMNS-1; col++) {
+
+            for (let row = TOTALROWS-1; row > 1; row--) {
+                //console.log(`${col} FDP: row:${row}`);        
+                if (level.tiles[row][col].tileType == myTileTypes.empty)
+                {
+                    level.tiles[row][col].tileType == myTileTypes.plainTile; // TODO: implement bombs,etc
+                    level.tiles[row][col].tileColor == level.tiles[row-1][col].tileColor;
+                }
             }
+
+            // if we have any missing the top row, go ahead and set a fresh tile
+            if (level.tiles[0][col].tileType == myTileTypes.empty)
+            {
+                level.tiles[0][col].Regenerate(); 
+            }
+
         }        
+
+        // top to bottom check
 
     }
    
+    function countMarkedTiles(){
+        var markedTilesSofar = 0; 
+        for (let row = 0; row < TOTALROWS-1; row++) {
+            for (let col = 0; col < TOTALCOLUMNS-1; col++) {
+                if (level.tiles[row][col].markedForPlay == true)        
+                {
+                    markedTilesSofar+=1; // self-assertion
+                }
+            }
+        }
+        return markedTilesSofar(); 
+    }
     
+
+
+
     // primary entry point
     init();
 }    
