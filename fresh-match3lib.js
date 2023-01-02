@@ -13,7 +13,8 @@ window.onload = function() {
         x: 250,         // X position of canvas?
         y: 113,         // Y position
         tiles: [],      // The two-dimensional tile array
-        selectedtile: { selected: false, column: 0, row: 0 }  // change this a bit, for selected click tile?
+        colorInPlay: -1, // positive - tileColor when clicked
+        totalClicks: 0
     };
 
     // constants
@@ -73,7 +74,7 @@ window.onload = function() {
             this.tileColor = 0;
             this.tileType = myTileTypes.empty;
             this.markedForPlay = false; // might need to change later
-            console.log(`tile ${this.xcor}${this.ycor} erased`);
+            console.log(`  tile ${this.xcor},${this.ycor} erased`);
         }
 
 
@@ -259,6 +260,7 @@ window.onload = function() {
         if (mouseX >= 0 && mouseX < TOTALCOLUMNS && mouseY >= 0 && mouseY < TOTALROWS) {
             // Tile is valid
             console.log(`tile clicked  x:${mouseX}  ${mouseY}`);
+            level.totalClicks+=1; 
             playTile(mouseX,mouseY); // might move elsewhere
             return {
                 validTileClick: true,
@@ -276,17 +278,59 @@ window.onload = function() {
     // actually do something
     function playTile(xVal, yVal){
         // check neighbors
-                
+        checkNeighbors(xVal,yVal);
+    }
 
+
+    function checkNeighbors(x,y){
+        var foundMatches = 0; 
+        //var playTile = level.tiles[x][y];
+        var targetColor = level.tiles[x][y].tileColor;
+        level.colorInPlay = level.tiles[x][y].tileColor;
+        // simple for loop
+        // left to right(east match)
+        for (let scanX = x+1; scanX < TOTALCOLUMNS-1; scanX++) {
+            if (level.tiles[scanX][y].tileColor == targetColor)
+            {
+                foundMatches+=1;
+                level.tiles[scanX][y].eraseTile();
+            }
+        }
+
+        // right-to-left
+        for (let scanX = x; scanX > 0; scanX--) {
+            if (level.tiles[scanX][y].tileColor == targetColor)
+            {
+                foundMatches+=1;
+                level.tiles[scanX][y].eraseTile();
+            }
+        }        
+
+        // if we found matches, we need to mark the tile itself as 'in play'
+        if (foundMatches>0){
+            level.tiles[x][y].eraseTile(); // good enough
+        }
+        else
+        {
+            console.log('no matches found');
+        }
 
     }
 
-    function checkNeighbors(xval,yVal){
+
+    // needs to be recursive
+    function checkNeighbors_old(xval,yVal){
         var foundMatches = 0; // if >0, we got neighbors
-        var playTile = level.tiles[xval][yVal];
         var playTileColor = level.tiles[xval][yVal].tileColor // TODO; tile TYPE!!
         // check horizontally
-        
+        if (xval==0)  // leftmost edge
+        {
+            if (level.tiles[xval+1].tileColor == playTileColor)
+            {
+                level.tiles[xval+1][yVal].eraseTile(); // good enough
+                foundMatches+=1;  // mark!
+            }
+        }
         // leftmost tile(check 1 right)
 
 
