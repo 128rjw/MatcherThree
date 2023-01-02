@@ -25,7 +25,7 @@ window.onload = function() {
     var TILEHEIGHT=  40 // Visual height of a tile    
 
     var Buttons = [ { x: 30, y: 270, width: 150, height: 50, text: "New Game"},
-                    { x: 30, y: 330, width: 150, height: 50, text: "Show Moves"}];    
+                    { x: 30, y: 330, width: 150, height: 50, text: "Refresh tiles"}];    
 
 
     // Game states
@@ -57,7 +57,7 @@ window.onload = function() {
         constructor(xcor,ycor){
             this.xcor = xcor;  // fraw ints(0,1,2,3)
             this.ycor = ycor;            
-            var wilbeDeleted = false; // mark when it will be eliminated
+            var markedForPlay = false; // mark when it will be eliminated
             var tileType = myTileTypes.plainTile;
             this.tileColor  = returnRandomTileColor(); 
             //console.log(`fresh tile color ${this.tileColor}`);
@@ -66,6 +66,14 @@ window.onload = function() {
         markTileToDelete()
         {
             wilbeDeleted = true;
+        }
+
+        eraseTile()
+        {
+            this.tileColor = 0;
+            this.tileType = myTileTypes.empty;
+            this.markedForPlay = false; // might need to change later
+            console.log(`tile ${this.xcor}${this.ycor} erased`);
         }
 
 
@@ -98,8 +106,8 @@ window.onload = function() {
         context.fillStyle = "#e8eaec";
         context.fillRect(1, 1, canvas.width-2, canvas.height-2);
 
-        // Draw header block?
-        context.fillStyle = "#303030";
+        // Draw header block
+        context.fillStyle = "#603030";
         context.fillRect(0, 0, canvas.width, 65);
 
         // Draw title
@@ -250,7 +258,7 @@ window.onload = function() {
         // Check if the tile is valid
         if (mouseX >= 0 && mouseX < TOTALCOLUMNS && mouseY >= 0 && mouseY < TOTALROWS) {
             // Tile is valid
-            console.log(`(getmousetile) tile is clicked  x:${mouseX}  ${mouseY}`);
+            console.log(`tile clicked  x:${mouseX}  ${mouseY}`);
             playTile(mouseX,mouseY); // might move elsewhere
             return {
                 validTileClick: true,
@@ -258,8 +266,6 @@ window.onload = function() {
                 y: mouseY
             };
         }
-
-        console.log("(getmousetile) no  valid tiles(clicked outside)");
         return {            
             valid: false,
             x: 0,
