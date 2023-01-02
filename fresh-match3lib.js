@@ -58,8 +58,8 @@ window.onload = function() {
         constructor(xcor,ycor){
             this.xcor = xcor;  // fraw ints(0,1,2,3)
             this.ycor = ycor;            
-            var markedForPlay = false; // mark when it will be eliminated
-            var tileType = myTileTypes.plainTile;
+            this.markedForPlay = false; // mark when it will be eliminated
+            this.tileType = myTileTypes.plainTile;
             this.tileColor  = returnRandomTileColor(); 
             //console.log(`fresh tile color ${this.tileColor}`);
         }
@@ -157,22 +157,46 @@ window.onload = function() {
 
 
     // draw grid tiles
+    // the outer loop
     function drawTheGrid(){
         console.log('drawing the grid of tiles');        
         for (var column=0; column<TOTALCOLUMNS; column++) {
             for (var row=0; row<TOTALROWS; row++) {
-                        var myCoordinates = getTileCoordinate(column, row, 6, 3);     
-                        var thisTile =  level.tiles[row][column];
-                        drawTile(myCoordinates.tilex, myCoordinates.tiley, thisTile);                    
+                        //var myCoordinates = getTileCoordinate(column, row, 6, 3);     
+                        //console.log(`${myCoordinates.tilex} ${myCoordinates.tiley}`); // wrong
+                        drawTile(row,column);                    
                 }
             }
+    }
+
+
+
+    function drawTile(x,y){
+        //console.log(`drawing tile x:${x} y:${y}`);
+        if (level.tiles[x][y].tileType  == myTileTypes.plainTile)
+        {
+            console.log('RENDER TILE');
+            var thisTile = level.tiles[x][y];            
+            var redValue = tilecolors[thisTile.tileColor][0];
+            var blueValue = tilecolors[thisTile.tileColor][1];
+            var greenValue = tilecolors[thisTile.tileColor][2];
+            var myCoordinates = getTileCoordinate(x, y, 6, 3);     
+            context.fillStyle = "rgb(" +  redValue  + "," + blueValue + "," + greenValue + ")"; // set color
+            context.fillRect(myCoordinates.tilex + 2, myCoordinates.tiley + 2, TILEWIDTH - 4, TILEHEIGHT - 4); // actual drawing function            
+            //context.fillRect(x + 2, y + 2, TILEWIDTH - 4, TILEHEIGHT - 4); // actual drawing function            
+        }
+        else if (level.tiles[x][y].tileType == myTileTypes.empty){
+            console.log(`empty `);
+            context.fillStyle = "rgb(" +  0  + "," + 0 + "," + 0 + ")"; 
+            context.fillRect(x + 2, y + 2, TILEWIDTH - 4, TILEHEIGHT - 4); // actual drawing function                        
+        }
     }
 
 
     // Draw a tile.
     // needs whole object passed in
     // note: don't need to really pass in object
-    function drawTile(x, y, tileObject) {
+    function drawTile_old(x, y, tileObject) {
         var redValue = tilecolors[tileObject.tileColor][0];
         var blueValue = tilecolors[tileObject.tileColor][1];
         var greenValue = tilecolors[tileObject.tileColor][2];
@@ -180,21 +204,6 @@ window.onload = function() {
         context.fillRect(x + 2, y + 2, TILEWIDTH - 4, TILEHEIGHT - 4); // actual drawing function
     }
 
-    function drawTile_Compact(x,y){
-        var thisTile = level.tiles[x][y];
-        if (thisTile.tileType == myTileTypes.plainTile)
-        {
-            var redValue = tilecolors[thisTile.tileColor][0];
-            var blueValue = tilecolors[thisTile.tileColor][1];
-            var greenValue = tilecolors[thisTile.tileColor][2];
-            context.fillStyle = "rgb(" +  redValue  + "," + blueValue + "," + greenValue + ")"; // set color
-            context.fillRect(x + 2, y + 2, TILEWIDTH - 4, TILEHEIGHT - 4); // actual drawing function            
-        }
-        else if (thisTile.tileType == myTileTypes.empty){
-            context.fillStyle = "rgb(" +  0  + "," + 0 + "," + 0 + ")"; 
-            context.fillRect(x + 2, y + 2, TILEWIDTH - 4, TILEHEIGHT - 4); // actual drawing function                        
-        }
-    }
 
     // graphics library
     
@@ -279,15 +288,18 @@ window.onload = function() {
     function playTile(xVal, yVal){
         // check neighbors
         checkNeighbors(xVal,yVal);
+        // END OF TURN
+        // now redraw the screen?
+
     }
 
 
     function checkNeighbors(x,y){
         var foundMatches = 0; 
-        //var playTile = level.tiles[x][y];
         var targetColor = level.tiles[x][y].tileColor;
         level.colorInPlay = level.tiles[x][y].tileColor;
-        // simple for loop
+        
+
         // left to right(east match)
         for (let scanX = x+1; scanX < TOTALCOLUMNS-1; scanX++) {
             if (level.tiles[scanX][y].tileColor == targetColor)
@@ -306,38 +318,33 @@ window.onload = function() {
             }
         }        
 
+        // top to bottom
+        for (let scanY = y; scanY < TOTALROWS; scanY++) {
+            if (level.tiles[x][scanY].tileColor == targetColor)
+            {
+                foundMatches+=1;
+                level.tiles[x][scanY].eraseTile();
+            }
+        }            
+
+
+
         // if we found matches, we need to mark the tile itself as 'in play'
         if (foundMatches>0){
+            console.log(`tiles played this turn: ${foundMatches}`);
             level.tiles[x][y].eraseTile(); // good enough
+            level.totalClicks+=1; 
         }
         else
         {
             console.log('no matches found');
         }
 
+        // END OF TURN(handled in next method)
     }
 
 
-    // needs to be recursive
-    function checkNeighbors_old(xval,yVal){
-        var foundMatches = 0; // if >0, we got neighbors
-        var playTileColor = level.tiles[xval][yVal].tileColor // TODO; tile TYPE!!
-        // check horizontally
-        if (xval==0)  // leftmost edge
-        {
-            if (level.tiles[xval+1].tileColor == playTileColor)
-            {
-                level.tiles[xval+1][yVal].eraseTile(); // good enough
-                foundMatches+=1;  // mark!
-            }
-        }
-        // leftmost tile(check 1 right)
-
-
-        // rightmost tile(check one left)
-        
-
-    }
+   
     
     // primary entry point
     init();
