@@ -79,7 +79,7 @@ window.onload = function() {
         // in play!
         markTile()
         {
-            console.log(`  tile ${this.xcor},${this.ycor} marked`);
+            console.log(`>>tile ${this.xcor},${this.ycor} marked`);
             level.foundMatchedTiles+=1;
             this.markedTile = true;
         }
@@ -380,6 +380,8 @@ window.onload = function() {
         // END OF TURN(handled in next method)
     }
 
+    // need to recursively run this function
+    // on all the marked tiles
     function checkNeighbors(x,y)
     {
         level.foundMatchedTiles = 0;  // reset
@@ -394,25 +396,40 @@ window.onload = function() {
                     {
                         console.log(`3 matching color found: 1, ${y}`);
                         level.tiles[1][y].markTile(); 
+                        level.tiles[x][y].markTile(); // mark self-tile
                     }    
             }                    
-        else if (x>0)
+        else if (x>0 && x<TOTALCOLUMNS)
         {
-            console.log(`checking ${level.tiles[x+1][y].tileColor}`);
+            console.log(`got color back: ${level.tiles[x+1][y].tileColor}`);
             if ( level.tiles[x+1][y].tileColor == level.colorInPlay)
                 {
                     level.tiles[x+1][y].markTile(); 
-                }      
-                else
-                {
-                    console.log(`matches not found`);
-                }                      
+                    level.tiles[x][y].markTile(); // mark self-tile
+                }                           
+        }
+        else if (x==TOTALCOLUMNS)
+        {
+            // check west only
+            if ( level.tiles[x-1][y].tileColor == level.colorInPlay)
+            {
+                level.tiles[x-1][y].markTile(); 
+                level.tiles[x][y].markTile(); // mark self-tile
+            } 
         }
 
         // topmost, south match
         if (y==0)
         {
-
+            if ( level.tiles[x+1][0].tileColor == level.colorInPlay)            
+            {   
+                level.tiles[x+1][0].markTile(); 
+                level.tiles[x][y].markTile(); // mark self-tile   
+            }
+        }
+        else if (y>0 && y<TOTALROWS)
+        {
+            
         }
 
         if (level.foundMatchedTiles>1)
@@ -438,6 +455,7 @@ window.onload = function() {
 
     // 2. erase the tiles(same as 1?)
     // works so far
+    // pre-drop
     function eraseMarkedPieces(){
         console.log('about to erase marked pieces');
         for (let row = 0; row < TOTALROWS-1; row++) {
@@ -451,52 +469,34 @@ window.onload = function() {
         }         
     }
 
-    // 1. mark tiles to be deleted to be erased(done in checkneighboars())
-    // 3. scan rows upward
-    //    a. find an empty tile?
-    //    b. bring down the (any) tile down one peg. 
-    function fallDownPieces_old(){
-        console.log(`falling down the pieces`);     
-        // BOTTOM TO TOP
-        for (let col = 0; col < TOTALCOLUMNS-1; col++) {
-            if (countEmptiesPerColumn(col)>0) {
-                for (let row = TOTALROWS-1; row > 1; row--) {
-                    //console.log(`${col} FDP: row:${row}`);        
-                    if (level.tiles[row][col].tileType == myTileTypes.empty)
-                    {
-                        console.log(`swap-falling tile ${row} ${col}`);
-                        swapTwoTiles(row,col,row-1,col);
-                    }
-                }
-
-                // if we have any missing the top row, go ahead and set a fresh tile
-                // will need to elaborate this
-                if (level.tiles[0][col].tileType == myTileTypes.empty)
-                {
-                    console.log(`regenerating top row empties`);
-                    level.tiles[0][col].Regenerate(); 
-                }
-        }
-        }        
-
-        // top to bottom check
-        // redraw?
-    }
+   
+   
    
     function fallDownPieces()
     {
-        var safety=3; // no more than 5 times
+        console.log(`about to fall down pieces`);
+        var safety=TOTALROWS; // recursive function
         do {
 
             for (let col = 0; col < TOTALCOLUMNS-1; col++) {
-                if (countEmptiesPerColumn(col)>0) {
-                    for (let row = 1; row > TOTALROWS-1; row++) {
-                        //console.log(`${col} FDP: row:${row}`);        
-                        if (level.tiles[row][col].tileType != myTileTypes.empty && 
-                            level.tiles[row+1][col].tileType == myTileTypes.empty)
+
+            // if we have any missing the top row, go ahead and set a fresh tile
+            // will need to elaborate this
+            if (level.tiles[0][col].tileType == myTileTypes.empty)
+            {
+                console.log(`regenerating top row empty, col ${col}`);
+                level.tiles[0][col].Regenerate(); 
+            }
+
+            if (countEmptiesPerColumn(col)>0) {
+                for (let row = 1; row > TOTALROWS-1; row++) {
+                    if (level.tiles[row][col].tileType != myTileTypes.empty && 
+                        level.tiles[row+1][col].tileType == myTileTypes.empty)
                         {
-                            console.log(`swap-falling tile ${row} ${col}`);
-                            swapTwoTiles(row,col,row+1,col);
+                            console.log(`swap-falling tile ${row} ${col}`);                            
+                            var fallingTile = level.tiles[row][col];  // grab original tile
+                            level.tiles[row][col].eraseTile(); // do last
+                            fallingTile = level.tiles[row+1][col];
                         }
 
                              
@@ -505,14 +505,9 @@ window.onload = function() {
                 }
             }
       safety--;
-    } while(safety>0); // TODO: do better
-    for (let col = 0; col < TOTALCOLUMNS-1; col++) {    
-        if (level.tiles[0][col].tileType == myTileTypes.empty)
-            {
-                console.log(`regenerating top row empty ${col}`);
-                level.tiles[0][col].Regenerate(); 
-            }   
-        }
+    } 
+    while(safety>0 || countMarkedTiles()==0); // TODO: do better
+    console.debug(`fall pieces done`);
 }
 
 
@@ -526,7 +521,7 @@ window.onload = function() {
                 }
             }
         }
-        return markedTilesSofar(); 
+        return markedTilesSofar; 
     }
     
 
@@ -536,16 +531,16 @@ window.onload = function() {
     function countEmptiesPerColumn(col)
     {
         var foundEmpties =0;
-        for (let col = 0; col <TOTALCOLUMNS-1; col++) {  
+        for (let col = 0; col <TOTALCOLUMNS; col++) {  
             for (let row=0; row<TOTALROWS-1;row++) {      
                 if (level.tiles[row][col].tileType == myTileTypes.empty)
                 {
                     //console.log(`found empty ${row},${col}: total: ${foundEmpties}`);
                     foundEmpties+=1;
                 }
+            //console.log(`total empties for column ${col}: ${foundEmpties}`);                
         }
-        }
-        console.log(`total empties for column ${col}: ${foundEmpties}`);
+        }        
         return foundEmpties;
     }
 
