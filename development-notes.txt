@@ -1,0 +1,11 @@
+
+
+Find neighbors:
+
+1. Mark the play tile
+2. do a checkneighbors(x,y) on its own tile.
+3. If there's a match, do a loop of ALL the tiles: run checkneighbors(row,col).
+4. that would make it recursive
+5. After that is done, then do the erase job.
+6. after erasing, do the tile fall
+
