@@ -325,7 +325,7 @@ window.onload = function() {
         level.foundMatchedTiles = 0; //reset
         if (level.tiles[x][y].tileType == myTileTypes.plainTile)
         {
-            checkNeighbors(x,y); // check neighbors
+            //checkNeighbors(x,y); // check neighbors
             if (level.foundMatchedTiles>0){
                 eraseMarkedPieces();
                 fallDownPieces(); // gravity        
@@ -380,6 +380,15 @@ window.onload = function() {
         // END OF TURN(handled in next method)
     }
 
+
+    function initGameplayClick(x,y){
+        level.foundMatchedTiles = 0;  // reset
+        level.colorInPlay = level.tiles[x][y].tileColor;
+        console.log(`${x},${y}   color in play: ${level.colorInPlay}`); // so far so good        
+        var selfMatchedTiles = 0; 
+                
+    }
+
     // need to recursively run this function
     // on all the marked tiles
     function checkNeighbors(x,y)
@@ -421,9 +430,9 @@ window.onload = function() {
         // topmost, south match
         if (y==0)
         {
-            if ( level.tiles[x+1][0].tileColor == level.colorInPlay)            
+            if ( level.tiles[x][1].tileColor == level.colorInPlay)            
             {   
-                level.tiles[x+1][0].markTile(); 
+                level.tiles[x][1].markTile(); 
                 level.tiles[x][y].markTile(); // mark self-tile   
             }
         }
