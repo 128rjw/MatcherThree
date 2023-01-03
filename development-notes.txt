@@ -9,3 +9,6 @@ Find neighbors:
 5. After that is done, then do the erase job.
 6. after erasing, do the tile fall
 
+
+a. prevent infinite loops
+b. 
