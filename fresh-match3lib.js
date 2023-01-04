@@ -267,7 +267,15 @@ window.onload = function() {
     function onMouseDown(event){
         var mousePos = getMousePosition(canvas, event); // Get the mouse position
         mt = getMouseTile(mousePos);
-        // GAME BUTTON CLICK
+
+        // TILE CLICK
+        if (mt.valid) {
+            console.log(`valid tile click detected: ${mt.x}  ${mt.y} `); // WORKS
+            // check neighbors of tile
+            checkNeighbors(mt.x,mt.y);
+        }
+
+        // BUTTON CLICK
         for (var aGameButton=0; aGameButton<Buttons.length; aGameButton++) {
             if (mousePos.x >= Buttons[aGameButton].x && mousePos.x < Buttons[aGameButton].x+Buttons[aGameButton].width &&
                 mousePos.y >= Buttons[aGameButton].y && mousePos.y < Buttons[aGameButton].y+Buttons[aGameButton].height)
@@ -279,6 +287,7 @@ window.onload = function() {
                     } 
             }
         }
+
         // TODO:
         // you can refresh things here, refreshes each click
 
@@ -375,6 +384,67 @@ window.onload = function() {
         console.log(`${x},${y}   color in play: ${level.colorInPlay}`); // so far so good        
         var selfMatchedTiles = 0; 
                 
+    }
+
+
+    // checks if the tile has any neighbors
+    // but doesn't set off the ball
+    // deterines if it is a valid move
+    // just 1-square NESW match
+    function passiveCheckNeighbors(x,y){
+        level.colorInPlay = level.tiles[x][y].tileColor;
+        console.log(`${x},${y}  passive check neighbors /n color in play: ${level.colorInPlay}`); // so far so good        
+        var selfMatchedTiles = 0; 
+        var foundAnyNeighbor = false;
+        //east
+        // left edge case
+        if (x==0)
+            {
+                if (level.tiles[1][y].tileColor == level.colorInPlay)
+                {
+                    foundAnyNeighbor = true; 
+                }    
+            }                    
+        else if (x>0 && x<TOTALCOLUMNS)
+            {
+            console.log(`got color back: ${level.tiles[x+1][y].tileColor}`);
+            if ( level.tiles[x+1][y].tileColor == level.colorInPlay)
+                {
+                    foundAnyNeighbor = true; 
+                }                           
+            }
+        else if (x==TOTALCOLUMNS)  // right edge case
+        {
+            // check west only
+            if ( level.tiles[x-1][y].tileColor == level.colorInPlay)
+            {
+                foundAnyNeighbor = true; 
+            } 
+        }
+
+        // topmost, south match
+        if (y==0)
+        {
+            if ( level.tiles[x][1].tileColor == level.colorInPlay)            
+            {   
+                foundAnyNeighbor = true;   
+            }
+        }
+        else if (y>0 && y<TOTALROWS)
+        {       
+            if ( level.tiles[x][y+1].tileColor == level.colorInPlay)            
+            {   
+                foundAnyNeighbor = true;   
+            }
+        }
+
+        if (foundAnyNeighbor==false)
+        {
+            level.colorInPlay = -1; // -1 is no matches
+        }
+
+        // just return it back
+        return foundAnyNeighbor; 
     }
 
     // need to recursively run this function
