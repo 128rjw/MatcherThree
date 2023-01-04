@@ -1,0 +1,15 @@
+
+definitions:
+1. grid - the 8x8 grid of tiles
+2. 
+
+
+
+1. maximum count of tiles = TOTALCOLUMNS * TOTALROWS (64 for now)
+2. (red tiles ) + (green tiles) + (other colors) = 64(and no more)
+3. 
+
+The turn
+
+1. matched tiles cannot exceed total # of tiles of that color on grid
+2. 

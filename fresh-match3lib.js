@@ -230,23 +230,11 @@ window.onload = function() {
     }
 
 
-    // Draw a tile.
-    // needs whole object passed in
-    // note: don't need to really pass in object
-    function drawTile_old(x, y, tileObject) {
-        var redValue = tilecolors[tileObject.tileColor][0];
-        var blueValue = tilecolors[tileObject.tileColor][1];
-        var greenValue = tilecolors[tileObject.tileColor][2];
-        context.fillStyle = "rgb(" +  redValue  + "," + blueValue + "," + greenValue + ")"; // set color
-        context.fillRect(x + 2, y + 2, TILEWIDTH - 4, TILEHEIGHT - 4); // actual drawing function
-    }
-
 
     // graphics library
     // TODO: tweakable diversity
     function returnRandomTileColor() {
         var myValue = Math.floor(Math.random() * tilecolors.length); 
-        //console.log(`returnrandomtilecolor: myvalue: ${myValue}`);
         return myValue;
     }    
 
@@ -266,8 +254,7 @@ window.onload = function() {
             }
         }        
 
-        regenerateTiles(); // fresh board
-        console.log('init FINISHED');
+        //regenerateTiles(); // fresh board
         drawGUI(); // works
         gameState = gameStates.ready;
     }
@@ -276,6 +263,7 @@ window.onload = function() {
 
 
     // CLICK FUNCTION EVENT
+    // branches between button clicks or tile clicks, or nothing
     function onMouseDown(event){
         var mousePos = getMousePosition(canvas, event); // Get the mouse position
         mt = getMouseTile(mousePos);
@@ -480,7 +468,7 @@ window.onload = function() {
 
    
    
-   
+    // super buggy
     function fallDownPieces()
     {
         console.log(`about to fall down pieces`);
