@@ -269,9 +269,9 @@ window.onload = function() {
         mt = getMouseTile(mousePos);
 
         // TILE CLICK
-        if (mt.valid) {
+        if (mt.validTileClick) {
             console.log(`valid tile click detected: ${mt.x}  ${mt.y} `); // WORKS
-            // check neighbors of tile
+            // check neighbors of tile(valid move)
             if (passiveCheckNeighbors(mt.x,mt.y) == true)
             {
                 // tile in play, let's do this
@@ -306,8 +306,10 @@ window.onload = function() {
     // input: pixel coordinates 
     // output: tile coordinates
     function getMouseTile(position) {
-        var mouseX = Math.floor((position.x - level.x) / TILEWIDTH);
-        var mouseY = Math.floor((position.y - level.y) / TILEHEIGHT);
+        //var mouseX = Math.floor((position.x - level.x) / TILEWIDTH);
+        var mouseX = Math.floor((position.x -XCANVASOFFSET) / TILEWIDTH);
+        //var mouseY = Math.floor((position.y - level.y) / TILEHEIGHT);
+        var mouseY = Math.floor((position.y - YCANVASOFFSET) / TILEHEIGHT);
         // Check if the tile is valid
         if (mouseX >= 0 && mouseX < TOTALCOLUMNS && mouseY >= 0 && mouseY < TOTALROWS) {
             return {
@@ -317,7 +319,7 @@ window.onload = function() {
             };
         }
         return {            
-            valid: false,
+            validTileClick: false,
             x: -1,
             y: -1  // used to be zero, change back if it breaks things
         };
@@ -398,20 +400,18 @@ window.onload = function() {
     // deterines if it is a valid move
     // just 1-square NESW match
     function passiveCheckNeighbors(x,y){
-        level.colorInPlay = level.tiles[x][y].tileColor;
+        level.colorInPlay = level.tiles[x][y].tileColor; // if nothing, set to -1
         console.log(`${x},${y}  passive check neighbors /n color in play: ${level.colorInPlay}`); // so far so good        
-        var selfMatchedTiles = 0; 
         var foundAnyNeighbor = false;
-        //east
-        // left edge case
-        if (x==0)
+        //east        
+        if (x==0) // left edge case
             {
                 if (level.tiles[1][y].tileColor == level.colorInPlay)
                 {
                     foundAnyNeighbor = true; 
                 }    
             }                    
-        else if (x>0 && x<TOTALCOLUMNS)
+        else if (x>0 && x<TOTALCOLUMNS) // middle rows
             {
             console.log(`got color back: ${level.tiles[x+1][y].tileColor}`);
             if ( level.tiles[x+1][y].tileColor == level.colorInPlay)
@@ -419,7 +419,7 @@ window.onload = function() {
                     foundAnyNeighbor = true; 
                 }                           
             }
-        else if (x==TOTALCOLUMNS)  // right edge case
+        else if (x==TOTALCOLUMNS)  // right edge case(double check this)
         {
             // check west only
             if ( level.tiles[x-1][y].tileColor == level.colorInPlay)
@@ -446,74 +446,15 @@ window.onload = function() {
 
         if (foundAnyNeighbor==false)
         {
+            console.debug(`no valid matches found`);
             level.colorInPlay = -1; // -1 is no matches
         }
 
-        // just return it back
+        // just return it back(true)
         return foundAnyNeighbor; 
     }
 
-    // need to recursively run this function
-    // on all the marked tiles
-    function checkNeighbors(x,y)
-    {
-        level.foundMatchedTiles = 0;  // reset
-        level.colorInPlay = level.tiles[x][y].tileColor;
-        console.log(`${x},${y}   color in play: ${level.colorInPlay}`); // so far so good        
-        var selfMatchedTiles = 0; 
-        //east
-        // left edge case
-        if (x==0)
-        {
-                   if (level.tiles[1][y].tileColor == level.colorInPlay)
-                    {
-                        console.log(`3 matching color found: 1, ${y}`);
-                        level.tiles[1][y].markTile(); 
-                        level.tiles[x][y].markTile(); // mark self-tile
-                    }    
-            }                    
-        else if (x>0 && x<TOTALCOLUMNS)
-        {
-            console.log(`got color back: ${level.tiles[x+1][y].tileColor}`);
-            if ( level.tiles[x+1][y].tileColor == level.colorInPlay)
-                {
-                    level.tiles[x+1][y].markTile(); 
-                    level.tiles[x][y].markTile(); // mark self-tile
-                }                           
-        }
-        else if (x==TOTALCOLUMNS)
-        {
-            // check west only
-            if ( level.tiles[x-1][y].tileColor == level.colorInPlay)
-            {
-                level.tiles[x-1][y].markTile(); 
-                level.tiles[x][y].markTile(); // mark self-tile
-            } 
-        }
-
-        // topmost, south match
-        if (y==0)
-        {
-            if ( level.tiles[x][1].tileColor == level.colorInPlay)            
-            {   
-                level.tiles[x][1].markTile(); 
-                level.tiles[x][y].markTile(); // mark self-tile   
-            }
-        }
-        else if (y>0 && y<TOTALROWS)
-        {
-            
-        }
-
-        if (level.foundMatchedTiles>1)
-        {
-            console.log(`matches found`);
-        }
-        else{
-            console.log(`..matches not found`);
-        }
-
-    }
+  
 
 
     function checkExtraNeighbors(x,y)
