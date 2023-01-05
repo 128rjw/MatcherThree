@@ -272,7 +272,15 @@ window.onload = function() {
         if (mt.valid) {
             console.log(`valid tile click detected: ${mt.x}  ${mt.y} `); // WORKS
             // check neighbors of tile
-            checkNeighbors(mt.x,mt.y);
+            if (passiveCheckNeighbors(mt.x,mt.y) == true)
+            {
+                // tile in play, let's do this
+                playTile(x,y);
+            }
+            else
+            {
+                console.log('no neighbors found');
+            }
         }
 
         // BUTTON CLICK
@@ -295,15 +303,13 @@ window.onload = function() {
     }
     
 
-    // Get the tile under the mouse
-    // keep this one
+    // input: pixel coordinates 
+    // output: tile coordinates
     function getMouseTile(position) {
         var mouseX = Math.floor((position.x - level.x) / TILEWIDTH);
         var mouseY = Math.floor((position.y - level.y) / TILEHEIGHT);
         // Check if the tile is valid
         if (mouseX >= 0 && mouseX < TOTALCOLUMNS && mouseY >= 0 && mouseY < TOTALROWS) {
-            // Tile is valid
-            playTile(mouseX,mouseY); // might move elsewhere
             return {
                 validTileClick: true,
                 x: mouseX,
@@ -312,12 +318,13 @@ window.onload = function() {
         }
         return {            
             valid: false,
-            x: 0,
-            y: 0
+            x: -1,
+            y: -1  // used to be zero, change back if it breaks things
         };
     }
 
-    // actually do something
+    // the game turn
+    // TODO: do this over. 
     function playTile(x, y){
         level.foundMatchedTiles = 0; //reset
         if (level.tiles[x][y].tileType == myTileTypes.plainTile)
@@ -325,9 +332,8 @@ window.onload = function() {
             //checkNeighbors(x,y); // check neighbors
             if (level.foundMatchedTiles>0){
                 eraseMarkedPieces();
-                fallDownPieces(); // gravity        
-                // refresh screen
-                drawTheGrid();                 
+                fallDownPieces(); // gravity                        
+                drawTheGrid(); // refresh screen
             }
         }
         else
