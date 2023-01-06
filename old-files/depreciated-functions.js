@@ -163,3 +163,52 @@
         return foundAnyNeighbor; 
     }
 }
+
+
+function initGameplayClick(x,y){
+    level.foundMatchedTiles = 0;  // reset
+    level.colorInPlay = level.tiles[x][y].tileColor;
+    console.log(`${x},${y}   color in play: ${level.colorInPlay}`); // so far so good        
+    var selfMatchedTiles = 0; 
+            
+}
+
+
+// the big function
+    //
+    function checkNeighbors_old(x,y){
+        level.foundMatchedTiles = 0; 
+        level.colorInPlay = level.tiles[x][y].tileColor;
+        
+
+        // mark clicked tag for self-notcied in play
+        level.tiles[x][y].markTileToDelete();
+
+        var scanX = x; 
+        var lastXFound = -1; //self marker
+        while (scanX<TOTALCOLUMNS-1)
+        {
+            console.log(`check: ${level.tiles[scanX][y].tileColor}`)
+            if (level.tiles[scanX+1][y].tileColor == level.colorInPlay &&
+                level.tiles[(scanX+1)][y].markTile == false)
+            {
+                console.log(`${level.foundMatchedTiles}  EAST MATCH >>>> ${scanX+1},${y}`);
+                lastXFound = scanX; 
+                level.foundMatchedTiles+=1;
+                level.tiles[scanX+1][y].markTileToDelete(); 
+            }            
+            scanX++;
+        }        
+        // if we found matches, we need to mark the tile itself as 'in play'
+        if (level.foundMatchedTiles>0){
+            level.tiles[x][y].markTileToDelete(); // delete self tile
+            console.log(`tiles played this turn: ${level.foundMatchedTiles}`);
+            level.totalTurns+=1; 
+        }
+        else
+        {
+            console.log(`no matches found: (so far)`);
+        }
+
+        // END OF TURN(handled in next method)
+    }

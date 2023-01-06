@@ -346,7 +346,7 @@ window.onload = function() {
         if (passiveCheckNeighbors(x,y)==true)
             {
         level.foundMatchedTiles = 0; //reset
-        if (level.tiles[x][y].tileType == myTileTypes.plainTile)
+        if (level.tiles[x][y].tileType == myTileTypes.plainTile) // switch for bomb, etc
         {
             //checkNeighbors(x,y); // check neighbors
             if (level.foundMatchedTiles>0){
@@ -357,60 +357,15 @@ window.onload = function() {
         }
         else
         {
-            console.log('non-tile clicked');
+            console.log('non-tile clicked(future expansion)');
         }
         // update score
-        document.title = `moves:${level.totalTurns} score:${level.score}`;
+        //document.title = `moves:${level.totalTurns} score:${level.score}`;
+        updateStats(); // use this instead
         }
     }
 
-    // the big function
-    //
-    function checkNeighbors_old(x,y){
-        level.foundMatchedTiles = 0; 
-        level.colorInPlay = level.tiles[x][y].tileColor;
-        
-
-        // mark clicked tag for self-notcied in play
-        level.tiles[x][y].markTileToDelete();
-
-        var scanX = x; 
-        var lastXFound = -1; //self marker
-        while (scanX<TOTALCOLUMNS-1)
-        {
-            console.log(`check: ${level.tiles[scanX][y].tileColor}`)
-            if (level.tiles[scanX+1][y].tileColor == level.colorInPlay &&
-                level.tiles[(scanX+1)][y].markTile == false)
-            {
-                console.log(`${level.foundMatchedTiles}  EAST MATCH >>>> ${scanX+1},${y}`);
-                lastXFound = scanX; 
-                level.foundMatchedTiles+=1;
-                level.tiles[scanX+1][y].markTileToDelete(); 
-            }            
-            scanX++;
-        }        
-        // if we found matches, we need to mark the tile itself as 'in play'
-        if (level.foundMatchedTiles>0){
-            level.tiles[x][y].markTileToDelete(); // delete self tile
-            console.log(`tiles played this turn: ${level.foundMatchedTiles}`);
-            level.totalTurns+=1; 
-        }
-        else
-        {
-            console.log(`no matches found: (so far)`);
-        }
-
-        // END OF TURN(handled in next method)
-    }
-
-
-    function initGameplayClick(x,y){
-        level.foundMatchedTiles = 0;  // reset
-        level.colorInPlay = level.tiles[x][y].tileColor;
-        console.log(`${x},${y}   color in play: ${level.colorInPlay}`); // so far so good        
-        var selfMatchedTiles = 0; 
-                
-    }
+    
 
 
 
@@ -444,25 +399,26 @@ window.onload = function() {
         var foundAnyNeighbor = false;
         if (x==0) // left edge case
             {
-                console.log(`east color: ${tilecolors[level.tiles[x+1][y].tileColor]}`);                
+                console.log(`(left edge case)east color: ${tilecolors[level.tiles[x+1][y].tileColor]}`);                
                 if (level.tiles[x][1].tileColor == level.colorInPlay)
                 {
                     pasvFoundMatches++;
                     foundAnyNeighbor = true; 
                 }    
             }                    
-        if (x>0 && x<TOTALCOLUMNS)
+        if (x>0 && x<TOTALCOLUMNS-1)
             {
-            // check right
-            console.log(`east color: ${tilecolors[level.tiles[x+1][y].tileColor]}`);
-            if ( level.tiles[x][y+1].tileColor == level.colorInPlay)
+            // check right      
+            console.log(`(rightmost) raw x value: ${x}`);
+            console.log(`(middle)east color: ${tilecolors[level.tiles[x+1][y].tileColor]}`);  // crashing
+            if ( level.tiles[x+1][y].tileColor == level.colorInPlay)
                 {
                     pasvFoundMatches++;
                     foundAnyNeighbor = true; 
                 }                                   
             // check west
             console.log(`west color: ${tilecolors[level.tiles[x-1][y].tileColor]}`);
-            if ( level.tiles[x-1][y].tileColor == level.colorInPlay)
+            if ( level.tiles[x-1][y].tileColor == level.tiles[x][y].tileColor)
                 {
                     pasvFoundMatches++;
                     foundAnyNeighbor = true; 
@@ -470,8 +426,9 @@ window.onload = function() {
            }
         if  (x==TOTALCOLUMNS)  // right edge case(double check this)
         {
-            console.log(`west color: ${tilecolors[level.tiles[x-1][y].tileColor]}`);
-            if ( level.tiles[x-1][y].tileColor == level.colorInPlay)
+            console.log(`right edge case!`);
+            console.log(`(right edge case)west color: ${tilecolors[level.tiles[TOTALCOLUMNS][y-1].tileColor]}`);
+            if ( level.tiles[TOTALCOLUMNS][y-1].tileColor == level.colorInPlay)
             {
                 pasvFoundMatches++;
                 foundAnyNeighbor = true; 
@@ -489,7 +446,7 @@ window.onload = function() {
                 foundAnyNeighbor = true;                   
             }
         }
-        else if  (y>0 && y<TOTALCOLUMNS)
+        else if  (y>0 && y<TOTALROWS-1)
         {       
             console.log(`south color: ${tilecolors[level.tiles[x][y+1].tileColor]}`);
             if ( level.tiles[x][y+1].tileColor == level.colorInPlay)            
@@ -507,42 +464,50 @@ window.onload = function() {
             }            
 
         }
-        else if  (y==TOTALCOLUMNS)
+        else if  (y==TOTALROWS) // bottom edge case
         {
-            console.log(`south color: ${tilecolors[level.tiles[x][y+1].tileColor]}`);
-            if ( level.tiles[x][y+1].tileColor == level.colorInPlay)            
+            console.log(`north color: ${tilecolors[level.tiles[x][y-1].tileColor]}`);
+            if ( level.tiles[x][y-1].tileColor == level.colorInPlay)            
             {               
                 pasvFoundMatches++;
                 foundAnyNeighbor = true;   
             }
         }
 
+        console.log(`matching neighbors Total ${pasvFoundMatches}`);
+
         if (foundAnyNeighbor==false)
         {
             level.colorInPlay = -1; // -1 is no matches
-        }
-        else
-        {
-            console.log(`found matching neighbors`);
         }
 
         // just return it back(true)
         return foundAnyNeighbor; 
     }
     
+    // check the whole board for matching neighbors
+    // filter by color
+    // filter by marked(needs tweaking beforehand)
+    // TODO: not row-col check, but all colors check
+    
+    function recursiveCheckNeighbors(x,y){
+        for (let row = 0; row < TOTALROWS-1; row++) {
+            for (let col = 0; col < TOTALCOLUMNS-1; col++) {
+                if (level.tiles[row][col].markedTile == true)
+                {           
+                    console.log(`found marked tile...${row}${col} `);
+                    markCheckNeighbors(row,col); 
+                }
+            }
+        }   
+    }
 
-  
+    // part of the recursive function
+    // marks matching nearby tiles.
+    // potential for infinite loop. 
+    function markCheckNeighbors(row,col){
 
-
-    // function checkExtraNeighbors(x,y)
-    // {
-    //     for (let row = 0; row < TOTALROWS-1; row++) {
-    //         for (let col = 0; col < TOTALCOLUMNS-1; col++) {
-
-    //         }
-    //     }     
-    // }
-
+    }
 
     // 2. erase the tiles(same as 1?)
     // works so far
