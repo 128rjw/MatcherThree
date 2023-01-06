@@ -60,3 +60,106 @@
         }
 
     }
+
+
+    function swapTwoTiles(alphaX,alphaY,betaX,betaY){
+        var firstTile = level.tiles[alphaX][alphaY];
+        var secondTile = level.tiles[betaX][betaY];
+        level.tiles[betaX][betaY] = firstTile;
+        level.tiles[alphaX][alphaY] = secondTile; 
+    }    
+
+
+    
+    // checks if the tile has any neighbors
+    // but doesn't set off the ball
+    // deterines if it is a valid move
+    // just 1-square NESW match
+    function passiveCheckNeighbors(x,y){
+        var pasvFoundMatches = 0; // found matches so far(private value)
+        level.colorInPlay = level.tiles[x][y].tileColor; // if nothing, set to -1 MIGHT MOVE THIS DOWN
+        console.log(`pasv: ${x},${y}   color/type: ${tilecolors[level.tiles[x][y].tileColor]}`); // so far so good
+        var foundAnyNeighbor = false;
+        switch (x)
+        {
+        case (x==0): // left edge case
+            {
+                if (level.tiles[1][y].tileColor == level.colorInPlay)
+                {
+                    console.log(`east color: ${tilecolors[level.tiles[x+1][y].tileColor]}`);
+                    pasvFoundMatches++;
+                    foundAnyNeighbor = true; 
+                }    
+            }                    
+        case (x>0 && x<TOTALCOLUMNS): 
+            {
+            // check right
+            console.log(`east color: ${tilecolors[level.tiles[x+1][y].tileColor]}`);
+            if ( level.tiles[x+1][y].tileColor == level.colorInPlay)
+                {
+                    pasvFoundMatches++;
+                    foundAnyNeighbor = true; 
+                }                                   
+            // check west
+            console.log(`west color: ${tilecolors[level.tiles[x+1][y].tileColor]}`);
+            if ( level.tiles[x-1][y].tileColor == level.colorInPlay)
+                {
+                    pasvFoundMatches++;
+                    foundAnyNeighbor = true; 
+                }                           
+           }
+        case (x==TOTALCOLUMNS):  // right edge case(double check this)
+        {
+            console.log(`west color: ${tilecolors[level.tiles[x+1][y].tileColor]}`);
+            if ( level.tiles[x-1][y].tileColor == level.colorInPlay)
+            {
+                pasvFoundMatches++;
+                foundAnyNeighbor = true; 
+            } 
+            break;
+        }
+        }
+        // topmost, south match
+        switch (y)
+        {
+        case (0):
+        {
+            console.log(`south color: ${tilecolors[level.tiles[x+1][y].tileColor]}`);
+            if ( level.tiles[x][1].tileColor == level.colorInPlay)            
+            {                   
+                pasvFoundMatches++;
+                foundAnyNeighbor = true;                   
+            }
+        }
+        case (y>0 && y<TOTALCOLUMNS):
+        {       
+            console.log(`south color: ${tilecolors[level.tiles[x+1][y].tileColor]}`);
+            if ( level.tiles[x][y+1].tileColor == level.colorInPlay)            
+            {               
+                pasvFoundMatches++;
+                foundAnyNeighbor = true;   
+            }
+        }
+        case (y==TOTALCOLUMNS):
+        {
+            console.log(`west color: ${tilecolors[level.tiles[x+1][y].tileColor]}`);
+            if ( level.tiles[x][y-1].tileColor == level.colorInPlay)            
+            {               
+                pasvFoundMatches++;
+                foundAnyNeighbor = true;   
+            }
+        }
+
+        if (foundAnyNeighbor==false)
+        {
+            level.colorInPlay = -1; // -1 is no matches
+        }
+        else
+        {
+            console.log(`found matching neighbors`);
+        }
+
+        // just return it back(true)
+        return foundAnyNeighbor; 
+    }
+}

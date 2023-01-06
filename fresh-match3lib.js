@@ -56,13 +56,18 @@ window.onload = function() {
 
     // TODO: can toggle diversity level
     // with wrapper function
-    var tilecolors = [[255, 0, 0],
+    var old_tilecolors = [[255, 0, 0],
                       [0, 255, 0],
                       [0, 0, 255],
                       [128, 0, 0],
                       [0, 128, 125]];    
 
 
+    var tilecolors = ["Blue",
+                        "Crimson",
+                        "DarkGreen",
+                        "DarkOrange",
+                        "Sienna"];
 
 
     // trying to incorporate
@@ -130,23 +135,37 @@ window.onload = function() {
     // blanks it all out
     // fun first?
     function drawGridFrame() {
-        console.log('drawing grid frame');
-        context.fillStyle = "#d0d0d0";
-        context.fillRect(0, 0, canvas.width, canvas.height);
-        
-        context.fillStyle = BACKGROUNDCOLOR; //  "#08eaec";  // background - anything you want
-        context.fillRect(1, 1, canvas.width-2, canvas.height-2);
+        //console.log('drawing grid frame');
 
         // Draw header block
-        context.fillStyle = "#603030";
+        context.fillStyle = "green";
         context.fillRect(0, 0, canvas.width, 65);
 
+        context.fillStyle = "darkgreen";
+        context.fillRect(0, 0, canvas.width, canvas.height);
+        
+        context.fillStyle = BACKGROUNDCOLOR; 
+        context.fillRect(1, 1, canvas.width-2, canvas.height-2); // the actual canvas
+
+
+
         // Draw title
-        context.fillStyle = "#ffffff";
+        context.fillStyle = "red";
         context.font = "24px Verdana";
         context.fillText("Match 3 Game", 10, 30);
-        console.log('drawing grid frame FINISHED');
+        //console.log('drawing grid frame FINISHED');
     }
+
+
+    // mainly debug info
+    // but can be used for debug stats
+    function updateStats()
+    {
+        context.fillStyle = "Purple";
+        context.font = "24px Verdana";
+        context.fillText("Total Moves: "+ level.totalTurns.toString(), 10, 50);
+    }
+
 
     // Draw buttons
     // runs quite often
@@ -160,6 +179,8 @@ window.onload = function() {
             var textdim = context.measureText(Buttons[thisButton].text);
             context.fillText(Buttons[thisButton].text, Buttons[thisButton].x + (Buttons[thisButton].width-textdim.width)/2, Buttons[thisButton].y+30);
         }
+
+        updateStats();
     }    
 
     
@@ -209,17 +230,11 @@ window.onload = function() {
         //console.log(`drawing tile x:${x} y:${y}`);
         var myCoordinates = getTileCoordinate(x, y, 6, 3);     
         if (level.tiles[x][y].tileType  == myTileTypes.plainTile)
-        {
-            var thisTile = level.tiles[x][y];            
-            var redValue = tilecolors[thisTile.tileColor][0];
-            var blueValue = tilecolors[thisTile.tileColor][1];
-            var greenValue = tilecolors[thisTile.tileColor][2];
-            
-            context.fillStyle = "rgb(" +  redValue  + "," + blueValue + "," + greenValue + ")"; 
+        {            
+            context.fillStyle = tilecolors[level.tiles[x][y].tileColor]; 
             context.fillRect(myCoordinates.tilex + 2, myCoordinates.tiley + 2, TILEWIDTH - 4, TILEHEIGHT - 4); 
         }
         else if (level.tiles[x][y].tileType == myTileTypes.empty){
-            //console.log(`empty `);
             context.fillStyle = BACKGROUNDCOLOR; //  "#d0d0d0"; // change to constant
             context.fillRect(myCoordinates.tilex + 2, myCoordinates.tiley + 2, TILEWIDTH - 4, TILEHEIGHT - 4); 
         }
@@ -235,6 +250,7 @@ window.onload = function() {
     // TODO: tweakable diversity
     function returnRandomTileColor() {
         var myValue = Math.floor(Math.random() * tilecolors.length); 
+        //console.log(`fresh tile color: ${myValue} translates to ${tilecolors[myValue]} `);
         return myValue;
     }    
 
@@ -270,12 +286,12 @@ window.onload = function() {
 
         // TILE CLICK
         if (mt.validTileClick) {
-            console.log(`valid tile click detected: ${mt.x}  ${mt.y} `); // WORKS
+            //console.log(`valid tile click detected: ${mt.x}  ${mt.y} `); // WORKS
             // check neighbors of tile(valid move)
             if (passiveCheckNeighbors(mt.x,mt.y) == true)
             {
                 // tile in play, let's do this
-                playTile(x,y);
+                PlayTileTurn(mt.x,mt.y);
             }
             else
             {
@@ -306,9 +322,7 @@ window.onload = function() {
     // input: pixel coordinates 
     // output: tile coordinates
     function getMouseTile(position) {
-        //var mouseX = Math.floor((position.x - level.x) / TILEWIDTH);
         var mouseX = Math.floor((position.x -XCANVASOFFSET) / TILEWIDTH);
-        //var mouseY = Math.floor((position.y - level.y) / TILEHEIGHT);
         var mouseY = Math.floor((position.y - YCANVASOFFSET) / TILEHEIGHT);
         // Check if the tile is valid
         if (mouseX >= 0 && mouseX < TOTALCOLUMNS && mouseY >= 0 && mouseY < TOTALROWS) {
@@ -327,7 +341,10 @@ window.onload = function() {
 
     // the game turn
     // TODO: do this over. 
-    function playTile(x, y){
+    function PlayTileTurn(x, y){
+        console.log(`${x},${y}  -- color in play: ${tilecolors[level.tiles[x][y].tileColor]}`); // so far so good
+        if (passiveCheckNeighbors(x,y)==true)
+            {
         level.foundMatchedTiles = 0; //reset
         if (level.tiles[x][y].tileType == myTileTypes.plainTile)
         {
@@ -344,6 +361,7 @@ window.onload = function() {
         }
         // update score
         document.title = `moves:${level.totalTurns} score:${level.score}`;
+        }
     }
 
     // the big function
@@ -351,7 +369,7 @@ window.onload = function() {
     function checkNeighbors_old(x,y){
         level.foundMatchedTiles = 0; 
         level.colorInPlay = level.tiles[x][y].tileColor;
-        console.log(`${x},${y}   color in play: ${level.colorInPlay}`); // so far so good
+        
 
         // mark clicked tag for self-notcied in play
         level.tiles[x][y].markTileToDelete();
@@ -395,76 +413,135 @@ window.onload = function() {
     }
 
 
+
+    // some debugging functions
+
+
+    // returns # of tiles for selected color
+    // on board. 
+    function totalTilesOnBoardForColor(thisColor){
+        foundTiles = 0; 
+        for (let row = 0; row < TOTALROWS-1; row++) {
+            for (let col = 0; col < TOTALCOLUMNS-1; col++) {
+                if (level.tiles[row][col].tileColor == thisColor)
+                {           
+                    foundTiles++;
+                }
+            }
+        }         
+        return foundTiles; 
+    }
+
+
     // checks if the tile has any neighbors
     // but doesn't set off the ball
     // deterines if it is a valid move
     // just 1-square NESW match
     function passiveCheckNeighbors(x,y){
-        level.colorInPlay = level.tiles[x][y].tileColor; // if nothing, set to -1
-        console.log(`${x},${y}  passive check neighbors /n color in play: ${level.colorInPlay}`); // so far so good        
+        var pasvFoundMatches = 0; // found matches so far(private value)
+        level.colorInPlay = level.tiles[x][y].tileColor; // if nothing, set to -1 MIGHT MOVE THIS DOWN
+        console.log(`pasv: ${x},${y}   color/type: ${tilecolors[level.tiles[x][y].tileColor]}`); // so far so good
         var foundAnyNeighbor = false;
-        //east        
         if (x==0) // left edge case
             {
-                if (level.tiles[1][y].tileColor == level.colorInPlay)
+                console.log(`east color: ${tilecolors[level.tiles[x+1][y].tileColor]}`);                
+                if (level.tiles[x][1].tileColor == level.colorInPlay)
                 {
+                    pasvFoundMatches++;
                     foundAnyNeighbor = true; 
                 }    
             }                    
-        else if (x>0 && x<TOTALCOLUMNS) // middle rows
+        if (x>0 && x<TOTALCOLUMNS)
             {
-            console.log(`got color back: ${level.tiles[x+1][y].tileColor}`);
-            if ( level.tiles[x+1][y].tileColor == level.colorInPlay)
+            // check right
+            console.log(`east color: ${tilecolors[level.tiles[x+1][y].tileColor]}`);
+            if ( level.tiles[x][y+1].tileColor == level.colorInPlay)
                 {
+                    pasvFoundMatches++;
+                    foundAnyNeighbor = true; 
+                }                                   
+            // check west
+            console.log(`west color: ${tilecolors[level.tiles[x-1][y].tileColor]}`);
+            if ( level.tiles[x-1][y].tileColor == level.colorInPlay)
+                {
+                    pasvFoundMatches++;
                     foundAnyNeighbor = true; 
                 }                           
-            }
-        else if (x==TOTALCOLUMNS)  // right edge case(double check this)
+           }
+        if  (x==TOTALCOLUMNS)  // right edge case(double check this)
         {
-            // check west only
+            console.log(`west color: ${tilecolors[level.tiles[x-1][y].tileColor]}`);
             if ( level.tiles[x-1][y].tileColor == level.colorInPlay)
             {
+                pasvFoundMatches++;
                 foundAnyNeighbor = true; 
-            } 
+            }         
         }
 
+        
         // topmost, south match
         if (y==0)
         {
-            if ( level.tiles[x][1].tileColor == level.colorInPlay)            
-            {   
-                foundAnyNeighbor = true;   
+            console.log(`south color: ${tilecolors[level.tiles[x][y+1].tileColor]}`);
+            if ( level.tiles[x][y+1].tileColor == level.colorInPlay)            
+            {                   
+                pasvFoundMatches++;
+                foundAnyNeighbor = true;                   
             }
         }
-        else if (y>0 && y<TOTALROWS)
+        else if  (y>0 && y<TOTALCOLUMNS)
         {       
+            console.log(`south color: ${tilecolors[level.tiles[x][y+1].tileColor]}`);
             if ( level.tiles[x][y+1].tileColor == level.colorInPlay)            
-            {   
+            {               
+                pasvFoundMatches++;
+                foundAnyNeighbor = true;   
+            }
+
+            // check north
+            console.log(`north color: ${tilecolors[level.tiles[x][y-1].tileColor]}`);
+            if ( level.tiles[x][y-1].tileColor == level.colorInPlay)            
+            {               
+                pasvFoundMatches++;
+                foundAnyNeighbor = true;   
+            }            
+
+        }
+        else if  (y==TOTALCOLUMNS)
+        {
+            console.log(`south color: ${tilecolors[level.tiles[x][y+1].tileColor]}`);
+            if ( level.tiles[x][y+1].tileColor == level.colorInPlay)            
+            {               
+                pasvFoundMatches++;
                 foundAnyNeighbor = true;   
             }
         }
 
         if (foundAnyNeighbor==false)
         {
-            console.debug(`no valid matches found`);
             level.colorInPlay = -1; // -1 is no matches
+        }
+        else
+        {
+            console.log(`found matching neighbors`);
         }
 
         // just return it back(true)
         return foundAnyNeighbor; 
     }
+    
 
   
 
 
-    function checkExtraNeighbors(x,y)
-    {
-        for (let row = 0; row < TOTALROWS-1; row++) {
-            for (let col = 0; col < TOTALCOLUMNS-1; col++) {
+    // function checkExtraNeighbors(x,y)
+    // {
+    //     for (let row = 0; row < TOTALROWS-1; row++) {
+    //         for (let col = 0; col < TOTALCOLUMNS-1; col++) {
 
-            }
-        }     
-    }
+    //         }
+    //     }     
+    // }
 
 
     // 2. erase the tiles(same as 1?)
@@ -558,12 +635,7 @@ window.onload = function() {
         return foundEmpties;
     }
 
-    function swapTwoTiles(alphaX,alphaY,betaX,betaY){
-        var firstTile = level.tiles[alphaX][alphaY];
-        var secondTile = level.tiles[betaX][betaY];
-        level.tiles[betaX][betaY] = firstTile;
-        level.tiles[alphaX][alphaY] = secondTile; 
-    }
+
 
     // primary entry point
     init();
