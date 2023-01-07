@@ -54,15 +54,6 @@ window.onload = function() {
         vertRocket: Symbol("vertRocket")
     }
 
-    // TODO: can toggle diversity level
-    // with wrapper function
-    var old_tilecolors = [[255, 0, 0],
-                      [0, 255, 0],
-                      [0, 0, 255],
-                      [128, 0, 0],
-                      [0, 128, 125]];    
-
-
     var tilecolors = ["Blue",
                         "Crimson",
                         "DarkGreen",
@@ -70,13 +61,14 @@ window.onload = function() {
                         "Sienna"];
 
 
-    // trying to incorporate
+    // NOTE: xcor, ycor isn't really used
+    // 
     class gameTile
      {
         constructor(xcor,ycor){
-            this.xcor = xcor;  // fraw ints(0,1,2,3)
+            this.xcor = xcor;  // not really used(2-dim array used instead)
             this.ycor = ycor;            
-            this.markedTile = false; // mark when it will be eliminated
+            this.markedTile = false; 
             this.tileType = myTileTypes.plainTile;
             this.tileColor  = returnRandomTileColor(); 
         }
@@ -85,12 +77,14 @@ window.onload = function() {
         markTile()
         {
             console.log(`>>tile ${this.xcor},${this.ycor} marked`);
-            level.foundMatchedTiles+=1;
+            level.foundMatchedTiles+=1; // migh t tweak
             this.markedTile = true;
         }
 
+        // don't use
         setasPlaytile()
         {
+            console.log(`>>tile ${this.xcor},${this.ycor} set as primary play tile`);
             this.markedTile  = true;
         }
 
@@ -99,13 +93,14 @@ window.onload = function() {
             this.tileColor = -1;
             this.tileType = myTileTypes.empty;
             this.markedTile = false; // might need to change later
-            console.log(`&&  tile ${this.xcor},${this.ycor} erased`);
+            console.log(`&&  tile ${this.xcor},${this.ycor} erased`); 
         }
 
         Regenerate(){ 
             this.markedTile = false;
             this.tileType = myTileTypes.plainTile;
             this.tileColor  = returnRandomTileColor();  // redraw itself maybe?
+            console.log(`&&  tile ${this.xcor},${this.ycor} regenerated`); 
         }
 
 
@@ -123,7 +118,7 @@ window.onload = function() {
 
     //outer function
     function drawGUI(){
-        console.log("drawing whole GUI");        
+        //console.log("drawing whole GUI");        
         drawGridFrame();
         drawButtons();  
         drawTheGrid(); // draw tile grid(done repeatedly)
@@ -135,8 +130,6 @@ window.onload = function() {
     // blanks it all out
     // fun first?
     function drawGridFrame() {
-        //console.log('drawing grid frame');
-
         // Draw header block
         context.fillStyle = "green";
         context.fillRect(0, 0, canvas.width, 65);
@@ -147,9 +140,8 @@ window.onload = function() {
         context.fillStyle = BACKGROUNDCOLOR; 
         context.fillRect(1, 1, canvas.width-2, canvas.height-2); // the actual canvas
 
-
-
-        // Draw title
+        // Draw title top bar
+        // all of this will change
         context.fillStyle = "red";
         context.font = "24px Verdana";
         context.fillText("Match 3 Game", 10, 30);
@@ -164,22 +156,22 @@ window.onload = function() {
         context.fillStyle = "Purple";
         context.font = "24px Verdana";
         context.fillText("Total Moves: "+ level.totalTurns.toString(), 10, 50);
+        // add more here
+
     }
 
 
     // Draw buttons
-    // runs quite often
     function drawButtons() {
         for (var thisButton=0; thisButton<Buttons.length; thisButton++) {
-            context.fillStyle = "#000000";
+            context.fillStyle = "white";
             context.fillRect(Buttons[thisButton].x, Buttons[thisButton].y, Buttons[thisButton].width, Buttons[thisButton].height);
 
-            context.fillStyle = "#ffffff";
-            context.font = "18px Verdana";
+            context.fillStyle = "black";
+            context.font = "18px Verdana"; // find a beter font
             var textdim = context.measureText(Buttons[thisButton].text);
             context.fillText(Buttons[thisButton].text, Buttons[thisButton].x + (Buttons[thisButton].width-textdim.width)/2, Buttons[thisButton].y+30);
         }
-
         updateStats();
     }    
 
@@ -383,8 +375,33 @@ window.onload = function() {
                     foundTiles++;
                 }
             }
-        }         
+        }       
+        console.log(`found tiles for color ${tilecolors[thisColor]}: ${foundTiles} }`);
         return foundTiles; 
+    }
+
+    // just shows total tile colors for everything
+    // 
+    function tileColorReport(){
+        allColorSum = 0; 
+        for (element==0;element<tilecolors.length;element++) {
+            console.log(`Total colors for ${element} ${totalTilesOnBoardForColor(element)}`);
+            allColorSum+=totalTilesOnBoardForColor(element);
+        }
+        console.log(`sum of all colors ${allColorSum}`);
+    }
+
+    function tileColorReport_GUI(){
+        allColorSum = 0; 
+        for (element==0;element<tilecolors.length;element++) {
+
+            console.log(`Total colors for ${element} ${totalTilesOnBoardForColor(element)}`);
+        context.fillStyle = "Purple";
+        context.font = "24px Verdana";
+        context.fillText("Total Moves: "+ level.totalTurns.toString(), 10, 50);            
+            allColorSum+=totalTilesOnBoardForColor(element);
+        }
+        console.log(`sum of all colors ${allColorSum}`);
     }
 
 
@@ -399,8 +416,8 @@ window.onload = function() {
         var foundAnyNeighbor = false;
         if (x==0) // left edge case
             {
-                console.log(`(left edge case)east color: ${tilecolors[level.tiles[x+1][y].tileColor]}`);                
-                if (level.tiles[x][1].tileColor == level.colorInPlay)
+                console.log(`(left edge case)east color: ${tilecolors[level.tiles[x+1][y].tileColor]}`); // buggy(not registering)
+                if (level.tiles[x+1][1].tileColor == level.colorInPlay)
                 {
                     pasvFoundMatches++;
                     foundAnyNeighbor = true; 
@@ -409,15 +426,14 @@ window.onload = function() {
         if (x>0 && x<TOTALCOLUMNS-1)
             {
             // check right      
-            console.log(`(rightmost) raw x value: ${x}`);
-            console.log(`(middle)east color: ${tilecolors[level.tiles[x+1][y].tileColor]}`);  // crashing
+            console.log(`(middle)east color: ${tilecolors[level.tiles[x+1][y].tileColor]}`);  
             if ( level.tiles[x+1][y].tileColor == level.colorInPlay)
                 {
                     pasvFoundMatches++;
                     foundAnyNeighbor = true; 
                 }                                   
             // check west
-            console.log(`west color: ${tilecolors[level.tiles[x-1][y].tileColor]}`);
+            console.log(`(middle)west color: ${tilecolors[level.tiles[x-1][y].tileColor]}`);
             if ( level.tiles[x-1][y].tileColor == level.tiles[x][y].tileColor)
                 {
                     pasvFoundMatches++;
@@ -426,8 +442,7 @@ window.onload = function() {
            }
         if  (x==TOTALCOLUMNS)  // right edge case(double check this)
         {
-            console.log(`right edge case!`);
-            console.log(`(right edge case)west color: ${tilecolors[level.tiles[TOTALCOLUMNS][y-1].tileColor]}`);
+            console.log(`(right edge)west color(only): ${tilecolors[level.tiles[TOTALCOLUMNS][y-1].tileColor]}`);
             if ( level.tiles[TOTALCOLUMNS][y-1].tileColor == level.colorInPlay)
             {
                 pasvFoundMatches++;
@@ -436,7 +451,7 @@ window.onload = function() {
         }
 
         
-        // topmost, south match
+        // topmost, south match only
         if (y==0)
         {
             console.log(`south color: ${tilecolors[level.tiles[x][y+1].tileColor]}`);
@@ -446,7 +461,7 @@ window.onload = function() {
                 foundAnyNeighbor = true;                   
             }
         }
-        else if  (y>0 && y<TOTALROWS-1)
+        else if  (y>0 && y<TOTALROWS-1) // in between
         {       
             console.log(`south color: ${tilecolors[level.tiles[x][y+1].tileColor]}`);
             if ( level.tiles[x][y+1].tileColor == level.colorInPlay)            
@@ -474,22 +489,63 @@ window.onload = function() {
             }
         }
 
-        console.log(`matching neighbors Total ${pasvFoundMatches}`);
+        console.log(`matching neighbors Total ${pasvFoundMatches+1}`);  // +1 due to self
 
         if (foundAnyNeighbor==false)
         {
+            console.log(`no matches found`);
             level.colorInPlay = -1; // -1 is no matches
         }
 
         // just return it back(true)
         return foundAnyNeighbor; 
     }
+
+
+    // better simplified functions
+    function checkEastNeighbor(x,y){
+        if (level.tiles[x+1][1].tileColor == level.colorInPlay)
+        {
+            pasvFoundMatches++;
+            foundAnyNeighbor = true; 
+        }  
+    }
+
+    function checkWestNeighbor(x,y){
+            console.log(`(middle)west color: ${tilecolors[level.tiles[x-1][y].tileColor]}`);
+            if ( level.tiles[x-1][y].tileColor == level.tiles[x][y].tileColor)
+                {
+                    pasvFoundMatches++;
+                    foundAnyNeighbor = true; 
+                }                           
+           }
+    
+
+    function checkSouthNeighbor(x,y){
+            console.log(`south color: ${tilecolors[level.tiles[x][y+1].tileColor]}`);
+            if ( level.tiles[x][y+1].tileColor == level.colorInPlay)            
+            {               
+                pasvFoundMatches++;
+                foundAnyNeighbor = true;   
+            }
+    }
+
+    function checkNorthNeighbor(x,y){
+            console.log(`north color: ${tilecolors[level.tiles[x][y-1].tileColor]}`);
+            if ( level.tiles[x][y-1].tileColor == level.colorInPlay)            
+            {               
+                pasvFoundMatches++;
+                foundAnyNeighbor = true;   
+            }
+    }
+
+
     
     // check the whole board for matching neighbors
     // filter by color
     // filter by marked(needs tweaking beforehand)
     // TODO: not row-col check, but all colors check
-    
+    // this looks wrong
     function recursiveCheckNeighbors(x,y){
         for (let row = 0; row < TOTALROWS-1; row++) {
             for (let col = 0; col < TOTALCOLUMNS-1; col++) {
@@ -504,9 +560,25 @@ window.onload = function() {
 
     // part of the recursive function
     // marks matching nearby tiles.
-    // potential for infinite loop. 
+    // potential for infinite loop, careful 
     function markCheckNeighbors(row,col){
+        
+    }
 
+
+    // part of checking for neighbors
+    // also a safety brake
+    function countmarkedTiles(){
+        var totalCount = 0; 
+        for (let row = 0; row < TOTALROWS-1; row++) {
+            for (let col = 0; col < TOTALCOLUMNS-1; col++) {
+                if (level.tiles[row][col].markedTile == true) {           
+                    console.log(`found marked tile...${row}${col} `);
+                    totalCount+=1; 
+                }
+            }                    
+        }
+    return totalCount; 
     }
 
     // 2. erase the tiles(same as 1?)
