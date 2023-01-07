@@ -3,16 +3,18 @@
 <head>
 <meta charset="UTF-8">
 <title>The Match 3 multi js prototype</title>
-<script type='text/javascript' src='match3a.js'></script>
-<script type='text/javascript' src='lib2.js'></script>
 <script type='text/javascript'> window.onload = function(){
     console.log(`the html file script is loading!`);
-    
+    window.localStorage.clear();  // clear it
+    localStorage.setItem("zonky","surf");  // testing
     var htmlDurf = 0; 
 }
 </script>
+<script type='text/javascript' src='simpleLib.js'></script>
+<script type='text/javascript' src='lib2.js'></script>
 </head>
 <body>
 <canvas id="viewport" width="640" height="480"></canvas>
+<b window.onload="console.log(`this is loaded`)"> </b>
 </body>
 </html>
