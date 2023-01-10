@@ -20,6 +20,7 @@ window.onload = function() {
     };
 
     var thisTurn = {
+        markedNeighbors: 0,
         colorInPlay: -1,
         clickedTileX: -1,
         clickedTileY: -1,
@@ -93,7 +94,7 @@ window.onload = function() {
         {
             this.tileColor = -1;
             this.tileType = myTileTypes.empty;
-            this.markedTile = true; // might need to change later
+            this.markedTile = false; // might need to change later
             console.log(`&&  tile ${this.xcor},${this.ycor} erased`); 
         }
 
@@ -117,9 +118,7 @@ window.onload = function() {
     }
 
 
-    //outer function
-    function drawGUI(){
-        //console.log("drawing whole GUI");        
+    function drawGUI(){  
         drawGridFrame();
         drawButtons();  
         drawTheGrid(); // draw tile grid(done repeatedly)
@@ -150,16 +149,6 @@ window.onload = function() {
     }
 
 
-    // mainly debug info
-    // but can be used for debug stats
-    function updateStats()
-    {
-        //console.log(`TEST ${totalTilesOnBoardForColor(z)}`);
-        context.fillStyle = "Purple";
-        context.font = "24px Verdana";
-        context.fillText("Total Moves: "+ level.totalTurns.toString(), 10, 50);
-        
-    }
 
 
     // Draw buttons
@@ -172,7 +161,6 @@ window.onload = function() {
             var textdim = context.measureText(Buttons[thisButton].text);
             context.fillText(Buttons[thisButton].text, Buttons[thisButton].x + (Buttons[thisButton].width-textdim.width)/2, Buttons[thisButton].y+30);
         }
-        //updateStats();
     }    
 
     
@@ -198,7 +186,8 @@ window.onload = function() {
     // draw grid tiles
     // the outer loop
     function drawTheGrid(){
-        //console.log('drawing the grid of tiles');        
+        console.log('drawing the grid of tiles');        
+        // TODO: erase board? 
         for (let column=0; column<TOTALCOLUMNS; column++) {
             for (let row=0; row<TOTALROWS; row++) {
                         drawTile(row,column);                    
@@ -206,7 +195,7 @@ window.onload = function() {
             }
     }
 
-    // for new games
+    // for post-move
     function regenerateTiles(){
         for (var column=0; column<TOTALCOLUMNS; column++) {
             for (var row=0; row<TOTALROWS; row++) {
@@ -338,34 +327,29 @@ window.onload = function() {
     }
 
 
-    // the game turn
-    // TODO: do this over. 
-    function PlayTileTurn(x, y){
-        tileColorReport();
-        console.log(`playing tile ${x},${y} color: ${tilecolors[level.tiles[x][y].tileColor]}`); 
-        level.colorInPlay = level.tiles[x][y].tileColor; 
-        if (passiveCheckNeighbors(x,y)==true)
-            {
-                console.log(`found tiles to match`);
-                if (level.tiles[x][y].tileType == myTileTypes.plainTile) // switch for bomb, etc
-                {
-                    markCheckNeighbors(x,y);
-                    if (level.foundMatchedTiles>0){
-                        console.log(`found matched tiles, erasing`);
-                        eraseMarkedPieces();
-                        fallDownPieces(); // gravity                        
-                        drawTheGrid(); // refresh screen
-                    }
-                }
-                else
-                {
-                    console.log('non-tile clicked(future expansion)');
-                }
+
+
+    function PlayTileTurn(x,y){
+        // determine clicked-on type
+        if (level.tiles[x][y].tileType == myTileTypes.plainTile) // switch for bomb, etc
+        {
+            // first, passive check for neighbors
+            markCheckNeighbors(x,y); // do passive check first
+            if (thisTurn.markedNeighbors>0){
+                console.log(`found matched tiles, erasing`);
+                eraseMarkedPieces();
+                //fallDownPieces(); // gravity                        
+                
             }
+        }
+        else
+        {
+            console.log('non-tile clicked(future expansion)');
+        }
+        drawTheGrid(); // refresh screen
+        // reset round here
         resetTurn(); 
     }
-
-    
 
 
 
@@ -390,19 +374,7 @@ window.onload = function() {
         return foundTiles; 
     }
 
-    // just shows total tile colors for everything
-    // 
-    function tileColorReport(){
-        console.log(`begin of tile color report`);
-        allColorSum = 0; 
-        for (z=0;z<tilecolors.length;z++) {
-            var thisTotal = totalTilesOnBoardForColor(z);
-            console.log(`Total colors for ${tilecolors[z]} ${thisTotal}`);
-            allColorSum+=totalTilesOnBoardForColor(z);
-        }
-        console.log(`sum of all colors ${allColorSum}`);
-        console.log(``);
-    }
+
 
 
     // checks if the tile has any neighbors
@@ -410,14 +382,13 @@ window.onload = function() {
     // deterines if it is a valid move
     // just 1-square NESW match
     function passiveCheckNeighbors(x,y){
-        var pasvFoundMatches = 0; // found matches so far(private value)
         console.log(`pasv: ${x},${y}   color/type seeking: ${tilecolors[level.tiles[x][y].tileColor]}`); 
         var foundAnyNeighbor = false;
         if (x==0) // left edge case
             {
                 if (checkEastNeighbor(x,y,false))
                 {
-                    pasvFoundMatches++;
+                    thisTurn.markedNeighbors+=1;
                     foundAnyNeighbor = true; 
                 }    
             }                    
@@ -426,13 +397,13 @@ window.onload = function() {
             // check right                  
             if ( checkEastNeighbor(x,y,false))
                 {
-                    pasvFoundMatches++;
+                    thisTurn.markedNeighbors+=1;
                     foundAnyNeighbor = true; 
                 }                                  
             // check west
             if ( checkWestNeighbor(x,y,false))
                 {
-                    pasvFoundMatches++;
+                    thisTurn.markedNeighbors+=1;
                     foundAnyNeighbor = true; 
                 }                           
            }
@@ -440,7 +411,7 @@ window.onload = function() {
         {
             if ( checkWestNeighbor(x,y,false))
             {
-                pasvFoundMatches++;
+                thisTurn.markedNeighbors+=1;
                 foundAnyNeighbor = true; 
             }         
         }
@@ -451,7 +422,7 @@ window.onload = function() {
         {
             if ( checkSouthNeighbor(x,y,false))            
             {                   
-                pasvFoundMatches++;
+                thisTurn.markedNeighbors+=1;
                 foundAnyNeighbor = true;                   
             }
             
@@ -460,13 +431,13 @@ window.onload = function() {
         {       
             if ( checkSouthNeighbor(x,y,false))            
             {                   
-                pasvFoundMatches++;
+                thisTurn.markedNeighbors+=1;
                 foundAnyNeighbor = true;                   
             }
             // check north
             if (checkNorthNeighbor(x,y,false))            
             {                   
-                pasvFoundMatches++;
+                thisTurn.markedNeighbors+=1;
                 foundAnyNeighbor = true;                   
             }
 
@@ -475,17 +446,18 @@ window.onload = function() {
         {
             if (checkNorthNeighbor(x,y,false))            
             {                   
-                pasvFoundMatches++;
+                thisTurn.markedNeighbors+=1;
                 foundAnyNeighbor = true;                   
             }
         }
-
-        console.log(`(pasvfoundmatches) total:  ${pasvFoundMatches}`);  // +1 due to self
-
         if (foundAnyNeighbor==false)
         {
             console.log(`no matches found`);
             //level.colorInPlay = -1; // -1 is no matches
+        }
+        else{
+            // mark self-tile as marked
+            level.tiles[x][y].markTile(); 
         }
         // just return it back(true)
         console.log(`(foundanyneighbor) passive check neighbors: ${foundAnyNeighbor}`); // always false
@@ -503,6 +475,7 @@ window.onload = function() {
         {
             level.pasvFoundMatches+=1;
             foundAnyNeighbor = true; 
+            if (shouldMark) { level.tiles[x+1][y].markTile(); }
         }  
         return foundAnyNeighbor; 
     }
@@ -514,6 +487,7 @@ window.onload = function() {
                 {
                     level.pasvFoundMatches+=1;
                     foundAnyNeighbor = true; 
+                    if (shouldMark) { level.tiles[x-1][y].markTile(); }
                 }            
                 return foundAnyNeighbor;                                            
         }
@@ -551,39 +525,26 @@ window.onload = function() {
     function zap1_1_tile(){
         level.tiles[1][1].eraseTile(); 
         eraseMarkedPieces(); 
-        fallDownPieces(); 
+        //fallDownPieces(); 
     }
     
-    // check the whole board for matching neighbors
-    // filter by color
-    // filter by marked(needs tweaking beforehand)
-    // TODO: not row-col check, but all colors check
-    // this looks wrong
-    function recursiveCheckNeighbors(x,y){
-        for (let row = 0; row < TOTALROWS-1; row++) {
-            for (let col = 0; col < TOTALCOLUMNS-1; col++) {
-                if (level.tiles[row][col].markedTile == true)
-                {           
-                    console.log(`found marked tile...${row}${col} `);
-                    markCheckNeighbors(row,col); 
-                }
-            }
-        }   
-    }
+
 
     // part of the recursive function
     // marks matching nearby tiles.
     // potential for infinite loop, careful 
+    // this is useless
     function markCheckNeighbors(row,col){
         console.log(`mark-checking neighbors`);
         for (let row = 0; row < TOTALROWS-1; row++) {
             for (let col = 0; col < TOTALCOLUMNS-1; col++) {
                 if (level.tiles[row][col].markedTile == true) {           
                     console.log(`found marked tile...${row}${col} `);
-                    totalCount+=1; 
+                    thisTurn.markCheckNeighbors+=1; 
                 }
             }                    
         }        
+        console.log(`total thisturn.markedneighbors: ${thisTurn.markedNeighbors}`);
     }
 
 
@@ -606,7 +567,7 @@ window.onload = function() {
     // works so far
     // pre-drop
     function eraseMarkedPieces(){
-        console.log('about to erase marked pieces');
+        console.log(`about to erase marked pieces. total marked ${thisTurn.foundMatchedTiles}`);
         for (let row = 0; row < TOTALROWS-1; row++) {
             for (let col = 0; col < TOTALCOLUMNS-1; col++) {
                 if (level.tiles[row][col].markedTile == true)
@@ -636,7 +597,7 @@ window.onload = function() {
                                 console.log(`Falling tile ${row} ${col}`);                            
                                 var fallingTile = level.tiles[row][col];  // grab original tile
                                 level.tiles[row][col].eraseTile(); // do last
-                                fallingTile = level.tiles[row+1][col];
+                                level.tiles[row+1][col] == fallingTile;
                             }                                
                         }
                 }
