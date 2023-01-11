@@ -23,8 +23,8 @@ window.onload = function() {
         pasvFoundMatches: 0,
         markedNeighbors: 0,
         colorInPlay: -1,
-        clickedTileX: -1,
-        clickedTileY: -1,
+        clickedTileCol: -1,
+        clickedTileRow: -1,
         foundMatchedTiles: 0,
         totalErasedTiles: 0,
         foundanyNeighbor: false
@@ -74,40 +74,41 @@ window.onload = function() {
     // 
     class gameTile
      {
-        constructor(xcor,ycor){
-            this.xcor = xcor;  // not really used(2-dim array used instead)
-            this.ycor = ycor;            
+        constructor(column,row,myTileType,tilecolor){
+            //  console.log(`new tile: col${column}, row: ${row} tiletype:${myTileType}`);
+            this.col = column;  // not really used(2-dim array used instead)
+            this.row = row;            
             this.markedTile = false; 
-            this.tileType = myTileTypes.plainTile;
-            this.tileColor  = returnRandomTileColor(); 
+            this.tileType = 1; // myTileType;
+            this.tileColor  =  tilecolor; // returnRandomTileColor(); 
         }
 
         // in play!
         markTile()
         {
-            console.log(`>>tile ${this.xcor},${this.ycor} marked`);
+            console.log(`>>tile ${this.col},${this.row} marked`);
             this.markedTile = true;
         }
 
         // don't use
         setasPlaytile()
         {
-            console.log(`>>tile ${this.xcor},${this.ycor} set as primary play tile`);
+            console.log(`>>tile ${this.col},${this.row} set as primary play tile`);
             this.markedTile  = true;
         }
 
+        // works individually
         eraseTile()
         {
+            this.tileType = 0; 
             this.tileColor = -1;
-            this.tileType = myTileTypes.empty;
-            this.markedTile = false; // might need to change later
-
-            console.log(`&&  tile ${this.xcor},${this.ycor} erased`); 
+            this.markedTile = true; // might need to change later
+            //console.log(`&&  tile ${this.col},${this.row} erased`); 
         }
 
         Regenerate(){ 
             this.markedTile = false;
-            this.tileType = myTileTypes.plainTile;
+            this.tileType = 1;
             this.tileColor  = returnRandomTileColor();  // redraw itself maybe?
             //console.log(`tile ${this.xcor},${this.ycor} regenerated`); 
         }
@@ -192,7 +193,6 @@ window.onload = function() {
 
     // just for drawing tiles
     function getTileCoordinate(column, row, columnOffset, rowOffset) {
-        var thisTile = level.tiles[column][row];   
         //console.log(`thistile: XCOR:  ${thisTile.xcor}`);
         //var translatedTileX =  thisTile.xcor + (column + columnOffset) * TILEWIDTH; // original
         //var translatedTileY = thisTile.ycor + (row + rowOffset) * TILEHEIGHT;  
@@ -209,7 +209,7 @@ window.onload = function() {
         // TODO: erase board? 
         for (let column=0; column<TOTALCOLUMNS; column++) {
             for (let row=0; row<TOTALROWS; row++) {
-                        drawTile(row,column);                    
+                        drawTile(column,row);                    
                 }
             }
     }
@@ -224,18 +224,26 @@ window.onload = function() {
     }
 
 
-    function drawTile(x,y){
-        var myCoordinates = getTileCoordinate(x, y, 6, 3);     
-        if (level.tiles[x][y].tileType  == myTileTypes.plainTile)  // breaks here
-        {            
-            context.fillStyle = tilecolors[level.tiles[x][y].tileColor]; 
-            context.fillRect(myCoordinates.tilex + 2, myCoordinates.tiley + 2, TILEWIDTH - 4, TILEHEIGHT - 4); 
-        }
-        else if (level.tiles[x][y].tileType == myTileTypes.empty){
+    function drawTile(col,row){
+        var myCoordinates = getTileCoordinate(col, row, 6, 3);     // TODO: fix this        
+        var thisTile = level.tiles[col][row];
+        //console.log(`drawtile. col${col} row${row}`); 
+        if (row>=TOTALROWS || col>=TOTALCOLUMNS) { 
+            console.log(`row exceeded totalrows! `);
+            row=TOTALROWS;};
+        
+        if (thisTile.tileType == 0){
             context.fillStyle = BACKGROUNDCOLOR; //  
             context.fillRect(myCoordinates.tilex + 2, myCoordinates.tiley + 2, TILEWIDTH - 4, TILEHEIGHT - 4); 
         }
-        else if (level.tiles[x][y].tileType == myTileTypes.Bomb){
+
+        if (thisTile.tileType   == 1)  
+        {            
+            context.fillStyle = tilecolors[thisTile.tileColor]; 
+            context.fillRect(myCoordinates.tilex + 2, myCoordinates.tiley + 2, TILEWIDTH - 4, TILEHEIGHT - 4); 
+        }
+
+        else if (level.tiles[col][row].tileType == 2){
             console.log('bomb');
         }
 
@@ -255,6 +263,7 @@ window.onload = function() {
     // ENTRY POINT
     function init()
     {   
+        gameState = gameStates.init; 
         console.clear(); 
         console.log("MAIN INIT");
         canvas.addEventListener("mousedown", onMouseDown);  
@@ -263,7 +272,7 @@ window.onload = function() {
         for (var thisColumn=0; thisColumn<TOTALCOLUMNS; thisColumn++) {
             level.tiles[thisColumn] = []; 
             for (var thisRow=0; thisRow<TOTALROWS; thisRow++) {
-                level.tiles[thisColumn][thisRow] =  new gameTile(thisColumn,thisRow); 
+                level.tiles[thisColumn][thisRow] =  new gameTile(thisColumn,thisRow,1,returnRandomTileColor()); 
             }
         }        
         drawGUI(); // works
@@ -289,13 +298,13 @@ window.onload = function() {
         if (mt.validTileClick) {
                 PlayTileTurn(mt.x,mt.y);
         }
-        else
-        {
         // BUTTON CLICK
         for (var aGameButton=0; aGameButton<Buttons.length; aGameButton++) {
+            //console.log(`checking buttons`);
             if (mousePos.x >= Buttons[aGameButton].x && mousePos.x < Buttons[aGameButton].x+Buttons[aGameButton].width &&
                 mousePos.y >= Buttons[aGameButton].y && mousePos.y < Buttons[aGameButton].y+Buttons[aGameButton].height)
                  {
+                    //console.log(`checking buttons`);
                     if (aGameButton == 0) {
                         drawTheGrid();
                     }
@@ -305,14 +314,11 @@ window.onload = function() {
                     else if (aGameButton == 2) {
                     drawTheGrid();
                    }  
-                   else
-                   {
-                    console.log(`nothing clicked`);
-                   }
+                                   
                 }                   
             }
         }
-    }
+    
 
         // TODO:
         // you can refresh things here, refreshes each click
@@ -344,8 +350,8 @@ window.onload = function() {
     function resetTurn()
     {
         thisTurn.colorInPlay = -1; 
-        thisTurn.clickedTileX = -1;
-        thisTurn.clickedTileY = -1;
+        thisTurn.clickedTileCol = -1;
+        thisTurn.clickedTileRow = -1;
         thisTurn.colorInPlay = -1;
         thisTurn.foundMatchedTiles = false;
         thisTurn.foundanyNeighbor = false;    
@@ -356,20 +362,19 @@ window.onload = function() {
 
     // THE BIG TURN
     // 
-    function PlayTileTurn(x,y){
+    function PlayTileTurn(col,row){
         // determine clicked-on type
-        console.log(`playing tile ${x},${y}`);  
-        if (level.tiles[x][y].tileType == myTileTypes.plainTile) // switch for bomb, etc
+        console.log(`playing tile ${col},${row}`);  
+        if (level.tiles[col][row].tileType == 1) // works
         {
-            thisTurn.colorInPlay = level.tiles[x][y].tileColor
-            // first, passive check for neighbors
-            checkNeighbors(x,y,false); // do passive check first
+            thisTurn.colorInPlay = level.tiles[col][row].tileColor
+            checkNeighbors(col,row,false); // do passive check first
             if (thisTurn.markedNeighbors>0){
                 console.log(`found matched tiles, erasing`);
-                checkNeighbors(x,y,true); // active checking
-                recursiveCheckNeighbors();
-                eraseMarkedPieces();
-                fallDownPieces();               
+                checkNeighbors(col,row,true); // active checking
+                recursiveCheckNeighbors();  // POISON
+                eraseMarkedPieces(); // seems ok
+                fallDownPieces();   // seems ok             
                 
             }
         }
@@ -383,20 +388,23 @@ window.onload = function() {
     }
 
     // now find neigboring tiles we haven't found yet
+    // poison!
     function recursiveCheckNeighbors(){
         var recrFoundTiles = 0; // private counter 
         console.log(`recursive check neighbors`);
-        for (let row = 0; row < TOTALROWS-1; row++) {
+        for (let row = 0; row < TOTALROWS-1; row++) {            
             for (let col = 0; col < TOTALCOLUMNS-1; col++) {
-                if (level.tiles[row][col].tileColor == thisTurn.colorInPlay && 
-                    level.tiles[row][col].markedTile == true)
+                console.log(`col: ${col} row: ${row}`);
+                if (level.tiles[col][row].tileColor == thisTurn.colorInPlay && 
+                    level.tiles[col][row].markedTile == true)
                     {     
-                        checkNeighbors(row,col,true);
+                        checkNeighbors(col,row,true);
                         //checkSouthNeighbor(row,col,true);
                         //console.log('loop test');
                     }
             }
-        }       
+        }     
+        console.log(`recrfoundtiles: ${recrFoundTiles}`);
 
     }
 
@@ -407,35 +415,35 @@ window.onload = function() {
     // but doesn't set off the ball
     // deterines if it is a valid move
     // just 1-square NESW match
-    function checkNeighbors(x,y,active){
-        console.log(`pasv: ${x},${y}   color/type seeking: ${tilecolors[level.tiles[x][y].tileColor]}`); 
+    function checkNeighbors(col,row,active){
+        console.log(`pasv: ${col},${row}   color/type seeking: ${tilecolors[level.tiles[col][row].tileColor]}`); 
         var foundAnyNeighbor = false;
-        if (x==0) // left edge case
+        if (col==0) // left edge case
             {
-                if (checkEastNeighbor(x,y,active))
+                if (checkEastNeighbor(col,row,active))
                 {
                     thisTurn.markedNeighbors+=1;
                     foundAnyNeighbor = true; 
                 }    
             }                    
-        if (x>0 && x<TOTALCOLUMNS-1)
+        if (col>0 && col<TOTALCOLUMNS-1)
             {
             // check right                  
-            if ( checkEastNeighbor(x,y,active))
+            if ( checkEastNeighbor(col,row,active))
                 {
                     thisTurn.markedNeighbors+=1;
                     foundAnyNeighbor = true; 
                 }                                  
             // check west
-            if ( checkWestNeighbor(x,y,active))
+            if ( checkWestNeighbor(col,row,active))
                 {
                     thisTurn.markedNeighbors+=1;
                     foundAnyNeighbor = true; 
                 }                           
            }
-        if  (x==TOTALCOLUMNS)  // right edge case(double check this)
+        if  (col==TOTALCOLUMNS)  // right edge case(double check this)
         {
-            if ( checkWestNeighbor(x,y,active))
+            if ( checkWestNeighbor(col,row,active))
             {
                 thisTurn.markedNeighbors+=1;
                 foundAnyNeighbor = true; 
@@ -444,33 +452,36 @@ window.onload = function() {
 
         
         // topmost, south match only
-        if (y==0)
+        if (row==0)
         {
-            if ( checkSouthNeighbor(x,y,active))            
+            console.log(`topmost row`);
+            if ( checkSouthNeighbor(col,row,active))            
             {                   
                 thisTurn.markedNeighbors+=1;
                 foundAnyNeighbor = true;                   
             }
             
         }
-        else if  (y>0 && y<TOTALROWS-1) // in between
+        else if  (row>0 && row<TOTALROWS-1) // in between
         {       
-            if ( checkSouthNeighbor(x,y,active))            
+            console.log(`current row, should not be better than 7 ${row}`);
+            if ( checkSouthNeighbor(col,row,active))            
             {                   
                 thisTurn.markedNeighbors+=1;
                 foundAnyNeighbor = true;                   
             }
             // check north
-            if (checkNorthNeighbor(x,y,active))            
+            if (checkNorthNeighbor(col,row,active))            
             {                   
                 thisTurn.markedNeighbors+=1;
                 foundAnyNeighbor = true;                   
             }
 
         }
-        else if  (y==TOTALROWS) // bottom edge case
+        else if  (row==TOTALROWS) // bottom edge case
         {
-            if (checkNorthNeighbor(x,y,active))            
+            console.log(`bottom row`);
+            if (checkNorthNeighbor(col,row,active))            
             {                   
                 thisTurn.markedNeighbors+=1;
                 foundAnyNeighbor = true;                   
@@ -486,7 +497,7 @@ window.onload = function() {
         }
         else{
             // mark self-tile as marked
-            if (active) {level.tiles[x][y].markTile();} 
+            if (active) {level.tiles[col][row].markTile();} 
         }
         // just return it back(true)
         console.log(`(foundanyneighbor) passive check neighbors: ${foundAnyNeighbor}`); // always false
@@ -498,51 +509,51 @@ window.onload = function() {
     // x- x value of tile
     // y - y value of tile
     // shouldmark(bool) - mark for deletion?
-    function checkEastNeighbor(x,y,shouldMark){
+    function checkEastNeighbor(col,row,shouldMark){
         var foundAnyNeighbor = false;
-        if (level.tiles[x+1][y].tileColor == thisTurn.colorInPlay)
+        if (col+1 >= TOTALCOLUMNS) { console.warn(`columns exceeded! ${col+1}`)}
+        if (level.tiles[col+1][row].tileColor == thisTurn.colorInPlay)
         {
             thisTurn.pasvFoundMatches+=1;
             foundAnyNeighbor = true; 
-            if (shouldMark) { level.tiles[x+1][y].markTile(); }
+            if (shouldMark) { level.tiles[col+1][row].markTile(); }
         }  
         return foundAnyNeighbor; 
     }
 
-    function checkWestNeighbor(x,y,shouldMark){
+    function checkWestNeighbor(col,row,shouldMark){
         var foundAnyNeighbor = false;
             //console.log(`(middle)west color: ${tilecolors[level.tiles[x-1][y].tileColor]}`);
-            if ( level.tiles[x-1][y].tileColor == level.tiles[x][y].tileColor)
+            if ( level.tiles[col-1][row].tileColor == level.tiles[col][row].tileColor)
                 {
                     thisTurn.pasvFoundMatches+=1;
                     foundAnyNeighbor = true; 
-                    if (shouldMark) { level.tiles[x-1][y].markTile(); }
+                    if (shouldMark) { level.tiles[col-1][row].markTile(); }
                 }            
                 return foundAnyNeighbor;                                            
         }
     
 
-    function checkSouthNeighbor(x,y,shouldMark){
+    function checkSouthNeighbor(col,row,shouldMark){
         var foundAnyNeighbor = false;
-            //console.log(`south color: ${tilecolors[level.tiles[x][y+1].tileColor]}`);
-            if ( level.tiles[x][y+1].tileColor == thisTurn.colorInPlay)            
+            if ( level.tiles[col][row+1].tileColor == thisTurn.colorInPlay)            
             {                               
                 thisTurn.pasvFoundMatches+=1;
                 foundAnyNeighbor = true;
-                if (shouldMark) { level.tiles[x][y+1].markTile(); }   
+                if (shouldMark) { level.tiles[col][row+1].markTile(); }   
             }
         return foundAnyNeighbor;             
     }
 
     // check upward    
-    function checkNorthNeighbor(x,y,shouldMark){
+    function checkNorthNeighbor(col,row,shouldMark){
         var foundAnyNeighbor = false;
             //console.log(`north color: ${tilecolors[level.tiles[x][y-1].tileColor]}`);
-            if ( level.tiles[x][y-1].tileColor == thisTurn.colorInPlay)            
+            if ( level.tiles[col][row-1].tileColor == thisTurn.colorInPlay)            
             {               
                 thisTurn.pasvFoundMatches+=1;
                 foundAnyNeighbor = true;
-                if (shouldMark) { level.tiles[x][y-1].markTile(); }   
+                if (shouldMark) { level.tiles[col][row-1].markTile(); }   
             }
             return foundAnyNeighbor; 
     }
@@ -554,8 +565,23 @@ window.onload = function() {
     // DEBUG ONLY
     // zaps specific tile
     function zap1_1_tile(){
-        level.tiles[1][1].eraseTile(); 
-        quickTileReport(1,1);
+        // level.tiles.forEach(element => {
+        //     console.log(`outer loop`);  // works    
+            // level.tiles[element].forEach(element2=>{
+            //     console.log('inner loop');
+            //     //console.log(`foreacher ${element2.xcor}`);
+            
+            // });
+        for (row in level.tiles.length)
+        {
+            for (col in row.length) 
+            { 
+                console.log('for test');
+            }
+        }
+
+
+        destroyColumn(1);
         eraseMarkedPieces(); 
         fallDownPieces(); 
         drawTheGrid();
@@ -569,9 +595,9 @@ window.onload = function() {
     // also a safety brake
     function countmarkedTiles(){
         var totalCount = 0; 
-        for (let row = 0; row < TOTALROWS-1; row++) {
+        for (var row in level.tiles.length) {
             for (let col = 0; col < TOTALCOLUMNS-1; col++) {
-                if (level.tiles[row][col].markedTile == true) {           
+                if (level.tiles[col][row].markedTile == true) {           
                     console.log(`found marked tile...${row}${col} `);
                     totalCount+=1; 
                 }
@@ -580,15 +606,24 @@ window.onload = function() {
     return totalCount; 
     }
 
+    function countMarkedTiles2(){
+        level.tiles.array.forEach(element => {
+            level.tiles[element].array.forEach(element2=>{
+                console.log(`zz ${element2.xcor}`);
+            
+            });
+        });
+    }
+
     // 2. erase the tiles(same as 1?)
     // works 
     function eraseMarkedPieces(){
         console.log(`about to erase marked pieces.`);  
-        for (let row = 0; row < TOTALROWS-1; row++) {
-            for (let col = 0; col < TOTALCOLUMNS-1; col++) {
-                if (level.tiles[row][col].markedTile == true)
+        for (let row = 0; row < TOTALROWS; row++) {
+            for (let col = 0; col < TOTALCOLUMNS; col++) {
+                if (level.tiles[col][row].markedTile == true)
                 {           
-                    level.tiles[row][col].eraseTile(); 
+                    level.tiles[col][row].eraseTile(); 
                 }
             }
         }         
@@ -599,14 +634,14 @@ window.onload = function() {
     // down to up
     // needs rebuilding
     // go column by column individually
-    // this.tileType = myTileTypes.empty;
+    // this.tileType = 0;
     // needs a rewrite
     function fallDownPieces()
     {
         console.log(`** falling down pieces **`);
-        for (let col = 0; col < TOTALCOLUMNS; col++) {  // column left to right
-            console.log(`total empty pieces for column ${col} count: ${countEmptiesPerColumn(col)}`);
-            if (countEmptiesPerColumn(col)>0) { // pre-check                    
+        for  (let col=0; col<TOTALCOLUMNS; col++) {  // column left to right
+            if (countEmptiesPerColumn(col)>0) { 
+                console.log('found empties in column');
                 fallVerticalGrabLoop(col);
             }
         }
@@ -614,44 +649,54 @@ window.onload = function() {
     }
 
 
+    function destroyColumn(column){
+        console.log(`destroying column ${column}`);
+        for (var thisRow = 0; thisRow>TOTALROWS-1; thisRow++){
+            console.log('`helllo!!!');
+            level.tiles[column][thisRow].eraseTile(); 
+            drawTile(column,thisrow);
+        }
+        drawTheGrid();
+    }
+
     // a totally new function
     // will need top fill
     // just re-do the stack
-    function fallVerticalGrabLoop(col)
+    function fallVerticalGrabLoop(currentColumn)
     {
         // collect all non-blanks
         var nonBlankTiles = new Array(); 
         var myCounter = 0; 
         for (let thisRow = TOTALROWS-1; thisRow > 0; thisRow--) {
-                     // loop upward
-                    if (level.tiles[col][thisRow].tileType !=myTileTypes.empty){
-                        var targetTile = level.tiles[col][thisRow]; //<- the tile to add
-                        var targetX = level.tiles[col][thisRow].xcor;
-                        var targetY = level.tiles[col][thisRow].ycor;
-                        var thisTileType = level.tiles[col][thisRow].tileType;
-                        //nonBlankTiles.push(new gameTile(targetX,targetY)); // xcor & ycor are messed up
-                        //nonBlankTiles[myCounter++].tileColor = level.tiles[col][thisRow].tileColor;
+                    if (level.tiles[currentColumn][thisRow].tileType !=0){
+                        var targetTile = level.tiles[currentColumn][thisRow]; 
+                        var targetCol = level.tiles[currentColumn][thisRow].col;
+                        var targetRow = level.tiles[currentColumn][thisRow].row;
+                        var thisTileType = level.tiles[currentColumn][thisRow].tileType;
+                        var thisTileColor = level.tiles[currentColumn][thisRow].tileColor;
+                        //nonBlankTiles.push(new gameTile(targetCol,targetRow,thisTileType,thisTileColor) ); // poison
                     }
         }
 
-        // erase the tiles(start fresh)
-        for (let thisRow = TOTALROWS-1; thisRow > 0; thisRow--) {
-            // loop upward
-           level.tiles[col][thisRow].eraseTile();
-           }
+        // // erase the tiles(start fresh)
+        // for (let thisRow = TOTALROWS-1; thisRow > 0; thisRow--) {
+        //     // loop upward
+        //       level.tiles[currentColumn][thisRow].eraseTile();
+        // }
 
         // re-graft the tiles
-        var upCounter = 0; 
-        for (let thisRow = TOTALROWS-1; thisRow > 0; thisRow--) {
-            // loop upward
-           level.tiles[col][thisRow] = nonBlankTiles[upCounter++];
-           }           
+        // poison?  
+        // var upCounter = 0; 
+        // for (let thisRow = TOTALROWS-1; thisRow > 0; thisRow--) {
+        //     // loop upward
+        //    level.tiles[currentColumn][thisRow] = nonBlankTiles[upCounter++];
+        //    }           
     }   
 
 
-
+    // busted(on tile color)
     function quickTileReport(col,row){
-        console.log(`    >col${col},row:${row} color:${level.tiles[col][row].tileColor}`);
+        //console.log(`    >col${col},row:${row} color:${level.tiles[col][row].tileColor}`);
     }
 
     // count all tiles for deletion
@@ -659,7 +704,7 @@ window.onload = function() {
         var markedTilesSofar = 0; 
         for (let row = 0; row < TOTALROWS-1; row++) {
             for (let col = 0; col < TOTALCOLUMNS-1; col++) {
-                if (level.tiles[row][col].markTile == true)        
+                if (level.tiles[col][row].markTile == true)        
                 {
                     markedTilesSofar+=1; // self-assertion
                 }
@@ -676,13 +721,13 @@ window.onload = function() {
     {
         var foundEmpties =0;
             for (let row=0; row<TOTALROWS-1;row++) {      
-                console.log(`row: ${row}  col${col}`);
-                if (level.tiles[row][col].tileType == myTileTypes.empty)
+                //console.log(`(countempties) row: ${row}  col${col}`);
+                if (level.tiles[col][row].tileType == 0)
                 {
-                    //console.log(`found empty ${row},${col}: total: ${foundEmpties}`);
+                    console.log(`found empty ${row},${col}: total: ${foundEmpties}`);
                     foundEmpties+=1;
                 }
-            //console.log(`total empties for column ${col}: ${foundEmpties}`);                
+            console.log(`total empties for column ${col}: ${foundEmpties}`);                
         }
         return foundEmpties;
     }
