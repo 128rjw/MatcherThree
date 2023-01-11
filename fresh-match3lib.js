@@ -58,6 +58,11 @@ window.onload = function() {
         vertRocket: Symbol("vertRocket")
     }
 
+    // numeric tile types
+    // 0 - empty
+    // 1 - plain tile
+    // 2 - bomb 
+
     var tilecolors = ["Blue",
                         "Crimson",
                         "DarkGreen",
@@ -96,6 +101,7 @@ window.onload = function() {
             this.tileColor = -1;
             this.tileType = myTileTypes.empty;
             this.markedTile = false; // might need to change later
+
             console.log(`&&  tile ${this.xcor},${this.ycor} erased`); 
         }
 
@@ -104,6 +110,15 @@ window.onload = function() {
             this.tileType = myTileTypes.plainTile;
             this.tileColor  = returnRandomTileColor();  // redraw itself maybe?
             //console.log(`tile ${this.xcor},${this.ycor} regenerated`); 
+        }
+
+        // when swapping tiles
+        // set ALL properties but the xcor and ycor
+        // 
+        graftTile(ddd){
+            this.tileType = ddd.tileType;
+            this.tileColor = ddd.tileColor;
+            this.markedTile = false;
         }
 
 
@@ -178,8 +193,11 @@ window.onload = function() {
     // just for drawing tiles
     function getTileCoordinate(column, row, columnOffset, rowOffset) {
         var thisTile = level.tiles[column][row];   
-        var translatedTileX =  thisTile.xcor + (column + columnOffset) * TILEWIDTH;
-        var translatedTileY = thisTile.ycor + (row + rowOffset) * TILEHEIGHT;  
+        //console.log(`thistile: XCOR:  ${thisTile.xcor}`);
+        //var translatedTileX =  thisTile.xcor + (column + columnOffset) * TILEWIDTH; // original
+        //var translatedTileY = thisTile.ycor + (row + rowOffset) * TILEHEIGHT;  
+        var translatedTileX =  column + (column + columnOffset) * TILEWIDTH;  // ok so far
+        var translatedTileY = row + (row + rowOffset) * TILEHEIGHT;  
         return { tilex: translatedTileX, tiley: translatedTileY};
     }
 
@@ -208,7 +226,7 @@ window.onload = function() {
 
     function drawTile(x,y){
         var myCoordinates = getTileCoordinate(x, y, 6, 3);     
-        if (level.tiles[x][y].tileType  == myTileTypes.plainTile)
+        if (level.tiles[x][y].tileType  == myTileTypes.plainTile)  // breaks here
         {            
             context.fillStyle = tilecolors[level.tiles[x][y].tileColor]; 
             context.fillRect(myCoordinates.tilex + 2, myCoordinates.tiley + 2, TILEWIDTH - 4, TILEHEIGHT - 4); 
@@ -589,21 +607,47 @@ window.onload = function() {
         for (let col = 0; col < TOTALCOLUMNS; col++) {  // column left to right
             console.log(`total empty pieces for column ${col} count: ${countEmptiesPerColumn(col)}`);
             if (countEmptiesPerColumn(col)>0) { // pre-check                    
-                for (let row = TOTALROWS-1; row > 0; row--) { // loop upward
-                    quickTileReport(col,row);
-                    if (level.tiles[col][row].tileType == myTileTypes.empty && 
-                        level.tiles[col][row-1].tileType != myTileTypes.empty)
-                        {
-                            console.log(`Falling tile ${row} ${col}`);     
-                            var fallingTile = level.tiles[row-1][col];  // tile above it
-                            //level.tiles[col][row].eraseTile(); // do last
-                            level.tiles[col][row] == fallingTile;
-                        }                                
-                    }
+                fallVerticalGrabLoop(col);
             }
         }
     console.debug(`fall pieces done`);
     }
+
+
+    // a totally new function
+    // will need top fill
+    // just re-do the stack
+    function fallVerticalGrabLoop(col)
+    {
+        // collect all non-blanks
+        var nonBlankTiles = new Array(); 
+        var myCounter = 0; 
+        for (let thisRow = TOTALROWS-1; thisRow > 0; thisRow--) {
+                     // loop upward
+                    if (level.tiles[col][thisRow].tileType !=myTileTypes.empty){
+                        var targetTile = level.tiles[col][thisRow]; //<- the tile to add
+                        var targetX = level.tiles[col][thisRow].xcor;
+                        var targetY = level.tiles[col][thisRow].ycor;
+                        var thisTileType = level.tiles[col][thisRow].tileType;
+                        //nonBlankTiles.push(new gameTile(targetX,targetY)); // xcor & ycor are messed up
+                        //nonBlankTiles[myCounter++].tileColor = level.tiles[col][thisRow].tileColor;
+                    }
+        }
+
+        // erase the tiles(start fresh)
+        for (let thisRow = TOTALROWS-1; thisRow > 0; thisRow--) {
+            // loop upward
+           level.tiles[col][thisRow].eraseTile();
+           }
+
+        // re-graft the tiles
+        var upCounter = 0; 
+        for (let thisRow = TOTALROWS-1; thisRow > 0; thisRow--) {
+            // loop upward
+           level.tiles[col][thisRow] = nonBlankTiles[upCounter++];
+           }           
+    }   
+
 
 
     function quickTileReport(col,row){
@@ -632,6 +676,7 @@ window.onload = function() {
     {
         var foundEmpties =0;
             for (let row=0; row<TOTALROWS-1;row++) {      
+                console.log(`row: ${row}  col${col}`);
                 if (level.tiles[row][col].tileType == myTileTypes.empty)
                 {
                     //console.log(`found empty ${row},${col}: total: ${foundEmpties}`);
