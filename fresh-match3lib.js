@@ -240,6 +240,7 @@ window.onload = function() {
         console.clear(); 
         console.log("MAIN INIT");
         canvas.addEventListener("mousedown", onMouseDown);  
+        canvas.addEventListener("onkeydown",onKeyDown);
         // initialize the tile grid(mandatory)
         for (var thisColumn=0; thisColumn<TOTALCOLUMNS; thisColumn++) {
             level.tiles[thisColumn] = []; 
@@ -252,6 +253,10 @@ window.onload = function() {
     }
 
 
+    function onKeyDown(event){
+        var keyCode = ('which' in event) ? event.which : event.keyCode;
+        console.log(`you presed: ${keyCode}`);
+    }
 
 
     // CLICK FUNCTION EVENT
@@ -264,35 +269,32 @@ window.onload = function() {
         // redo this to handle any type
         // 
         if (mt.validTileClick) {
-            // move this all to playtileturn
-            // thisTurn.colorInPlay =  level.tiles[mt.x][mt.y].tileColor;
-            // if (passiveCheckNeighbors(mt.x,mt.y) == true)
-            // {
-                
                 PlayTileTurn(mt.x,mt.y);
-            // }
-            // else
-            // {
-            //     //console.log('no neighbors found');
-            // }
         }
-
+        else
+        {
         // BUTTON CLICK
         for (var aGameButton=0; aGameButton<Buttons.length; aGameButton++) {
             if (mousePos.x >= Buttons[aGameButton].x && mousePos.x < Buttons[aGameButton].x+Buttons[aGameButton].width &&
                 mousePos.y >= Buttons[aGameButton].y && mousePos.y < Buttons[aGameButton].y+Buttons[aGameButton].height)
                  {
                     if (aGameButton == 0) {
-                        startNewGame();
-                    } else if (aGameButton == 1) {
+                        drawTheGrid();
+                    }
+                     else if (aGameButton == 1) {
                         zap1_1_tile();
                     } 
-                } 
                     else if (aGameButton == 2) {
                     drawTheGrid();
-                   }                     
+                   }  
+                   else
+                   {
+                    console.log(`nothing clicked`);
+                   }
+                }                   
             }
         }
+    }
 
         // TODO:
         // you can refresh things here, refreshes each click
@@ -349,7 +351,7 @@ window.onload = function() {
                 checkNeighbors(x,y,true); // active checking
                 recursiveCheckNeighbors();
                 eraseMarkedPieces();
-                // TODO: fall pieces down                 
+                fallDownPieces();               
                 
             }
         }
@@ -535,8 +537,10 @@ window.onload = function() {
     // zaps specific tile
     function zap1_1_tile(){
         level.tiles[1][1].eraseTile(); 
+        quickTileReport(1,1);
         eraseMarkedPieces(); 
-        //fallDownPieces(); 
+        fallDownPieces(); 
+        drawTheGrid();
     }
     
 
@@ -559,45 +563,51 @@ window.onload = function() {
     }
 
     // 2. erase the tiles(same as 1?)
-    // works so far
-    // pre-drop
+    // works 
     function eraseMarkedPieces(){
-        console.log(`about to erase marked pieces. total marked: ${thisTurn.foundMatchedTiles}`);  // WRONG: its z0
+        console.log(`about to erase marked pieces.`);  
         for (let row = 0; row < TOTALROWS-1; row++) {
             for (let col = 0; col < TOTALCOLUMNS-1; col++) {
                 if (level.tiles[row][col].markedTile == true)
                 {           
-                    //console.log(`erasing tile...${row}${col} `); // works for self-tile
                     level.tiles[row][col].eraseTile(); 
                 }
             }
         }         
     }
 
-   
+
    
     // down to up
     // needs rebuilding
     // go column by column individually
+    // this.tileType = myTileTypes.empty;
+    // needs a rewrite
     function fallDownPieces()
     {
         console.log(`** falling down pieces **`);
-        var safety=TOTALROWS; // recursive function
-            for (let col = 0; col < TOTALCOLUMNS-1; col++) {  // column left to right
-                if (countEmptiesPerColumn(col)>0) { // pre-check
-                    for (let row = TOTALROWS; row < TOTALROWS-1; row--) { // loop upward
-                        if (level.tiles[row][col].tileType != myTileTypes.empty && 
-                            level.tiles[row+1][col].tileType == myTileTypes.empty)
-                            {
-                                console.log(`Falling tile ${row} ${col}`);                            
-                                var fallingTile = level.tiles[row][col];  // grab original tile
-                                level.tiles[row][col].eraseTile(); // do last
-                                level.tiles[row+1][col] == fallingTile;
-                            }                                
-                        }
-                }
+        for (let col = 0; col < TOTALCOLUMNS; col++) {  // column left to right
+            console.log(`total empty pieces for column ${col} count: ${countEmptiesPerColumn(col)}`);
+            if (countEmptiesPerColumn(col)>0) { // pre-check                    
+                for (let row = TOTALROWS-1; row > 0; row--) { // loop upward
+                    quickTileReport(col,row);
+                    if (level.tiles[col][row].tileType == myTileTypes.empty && 
+                        level.tiles[col][row-1].tileType != myTileTypes.empty)
+                        {
+                            console.log(`Falling tile ${row} ${col}`);     
+                            var fallingTile = level.tiles[row-1][col];  // tile above it
+                            //level.tiles[col][row].eraseTile(); // do last
+                            level.tiles[col][row] == fallingTile;
+                        }                                
+                    }
             }
+        }
     console.debug(`fall pieces done`);
+    }
+
+
+    function quickTileReport(col,row){
+        console.log(`    >col${col},row:${row} color:${level.tiles[col][row].tileColor}`);
     }
 
     // count all tiles for deletion
@@ -617,11 +627,10 @@ window.onload = function() {
 
     // helper function
     // counts empty tiles per column
-    // 
+    // works!
     function countEmptiesPerColumn(col)
     {
         var foundEmpties =0;
-        for (let col = 0; col <TOTALCOLUMNS; col++) {  
             for (let row=0; row<TOTALROWS-1;row++) {      
                 if (level.tiles[row][col].tileType == myTileTypes.empty)
                 {
@@ -630,7 +639,6 @@ window.onload = function() {
                 }
             //console.log(`total empties for column ${col}: ${foundEmpties}`);                
         }
-        }        
         return foundEmpties;
     }
 
