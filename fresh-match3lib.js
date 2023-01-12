@@ -631,11 +631,15 @@ window.onload = function() {
     {
         console.log(`** falling down pieces **`);
         for  (let col=0; col<TOTALCOLUMNS; col++) {  // not geting here
-              var blankReport =  anyBlanksOnColumn(col);
-              console.log(`total blanks on anynblankson ${blankReport}`);
+            //   var blankReport =  anyBlanksOnColumn(col);
+            //   console.log(`total blanks on anynblankson ${blankReport}`);
                 if (anyBlanksOnColumn(col)>0) 
                 {
                     var filteredCollumn = filterColumn(col);       
+                    for (x in filterColumn)
+                    {
+                        // loopy
+                    }
                     console.log(`total filtered colummn length ${filteredCollumn.length}`); // it's 1 below
                     fallVerticalGrabLoop(col);
                 }
@@ -643,25 +647,24 @@ window.onload = function() {
     console.debug(`fall pieces done`);
     }
 
+
+    // works
     function anyBlanksOnColumn(col){
         var foundBlanks = 0; 
         for (var thisRow = 0; thisRow<TOTALROWS-1; thisRow++){
-            //console.log(`found blank tile, type : ${level.tiles[col][thisrow].tileType}`);
                 if (level.tiles[col][thisRow].tileType ==0 )
-                {
-                    
+                {                    
                     foundBlanks+=1;
                 }
         }        
         return foundBlanks;
     }
 
-    // don't use this
+    // can use for redraw
+    // 
     function destroyColumn(column){
-        //console.log(`destroying column ${column}`);
         for (var thisRow = 0; thisRow>TOTALROWS-1; thisRow++){
             level.tiles[column][thisRow].eraseTile(); 
-            //drawTile(column,thisrow);
         }
     }
 
@@ -688,13 +691,15 @@ window.onload = function() {
     function filterColumn(thisColumn){
         var filteredList = [];
         for (let row=0; row<TOTALROWS;row++) {      
-            console.log(` (filter) current row: ${row}`);
+            //console.log(` (filter) current row: ${row}`);
             if (level.tiles[thisColumn][row].tileType !=0) 
             {
+                // TODO: transpose proper X-y coordinates for new tiles.
+                // need to set XCOR and ycor probably
                 filteredList.push(level.tiles[thisColumn][row]);
             }    
         }        
-        console.log(`found # of empty tiles for this column: ${filteredList.length}`);
+        console.log(`found # of empty tiles for this column: ${filteredList.length}`);        
         return filteredList; 
     }
     
