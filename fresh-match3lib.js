@@ -86,7 +86,7 @@ window.onload = function() {
         // in play!
         markTile()
         {
-            console.log(`>>tile ${this.col},${this.row} marked`);
+            //console.log(`>>tile ${this.col},${this.row} marked`);
             this.markedTile = true;
         }
 
@@ -225,9 +225,8 @@ window.onload = function() {
 
 
     function drawTile(col,row){
-        var myCoordinates = getTileCoordinate(col, row, 6, 3);     // TODO: fix this        
+        var myCoordinates = getTileCoordinate(col, row, 6, 3);     
         var thisTile = level.tiles[col][row];
-        //console.log(`drawtile. col${col} row${row}`); 
         if (row>=TOTALROWS || col>=TOTALCOLUMNS) { 
             console.log(`row exceeded totalrows! `);
             row=TOTALROWS;};
@@ -300,11 +299,9 @@ window.onload = function() {
         }
         // BUTTON CLICK
         for (var aGameButton=0; aGameButton<Buttons.length; aGameButton++) {
-            //console.log(`checking buttons`);
             if (mousePos.x >= Buttons[aGameButton].x && mousePos.x < Buttons[aGameButton].x+Buttons[aGameButton].width &&
                 mousePos.y >= Buttons[aGameButton].y && mousePos.y < Buttons[aGameButton].y+Buttons[aGameButton].height)
                  {
-                    //console.log(`checking buttons`);
                     if (aGameButton == 0) {
                         drawTheGrid();
                     }
@@ -394,13 +391,11 @@ window.onload = function() {
         console.log(`recursive check neighbors`);
         for (let row = 0; row < TOTALROWS-1; row++) {            
             for (let col = 0; col < TOTALCOLUMNS-1; col++) {
-                console.log(`col: ${col} row: ${row}`);
+                //console.log(`col: ${col} row: ${row}`);
                 if (level.tiles[col][row].tileColor == thisTurn.colorInPlay && 
                     level.tiles[col][row].markedTile == true)
                     {     
                         checkNeighbors(col,row,true);
-                        //checkSouthNeighbor(row,col,true);
-                        //console.log('loop test');
                     }
             }
         }     
@@ -416,7 +411,7 @@ window.onload = function() {
     // deterines if it is a valid move
     // just 1-square NESW match
     function checkNeighbors(col,row,active){
-        console.log(`pasv: ${col},${row}   color/type seeking: ${tilecolors[level.tiles[col][row].tileColor]}`); 
+        //console.log(`pasv: ${col},${row}   color/type seeking: ${tilecolors[level.tiles[col][row].tileColor]}`); 
         var foundAnyNeighbor = false;
         if (col==0) // left edge case
             {
@@ -464,7 +459,6 @@ window.onload = function() {
         }
         else if  (row>0 && row<TOTALROWS-1) // in between
         {       
-            console.log(`current row, should not be better than 7 ${row}`);
             if ( checkSouthNeighbor(col,row,active))            
             {                   
                 thisTurn.markedNeighbors+=1;
@@ -480,7 +474,6 @@ window.onload = function() {
         }
         else if  (row==TOTALROWS) // bottom edge case
         {
-            console.log(`bottom row`);
             if (checkNorthNeighbor(col,row,active))            
             {                   
                 thisTurn.markedNeighbors+=1;
@@ -499,8 +492,6 @@ window.onload = function() {
             // mark self-tile as marked
             if (active) {level.tiles[col][row].markTile();} 
         }
-        // just return it back(true)
-        console.log(`(foundanyneighbor) passive check neighbors: ${foundAnyNeighbor}`); // always false
         return foundAnyNeighbor; 
     }
 
@@ -615,7 +606,7 @@ window.onload = function() {
         });
     }
 
-    // 2. erase the tiles(same as 1?)
+    // 2. erase the tiles
     // works 
     function eraseMarkedPieces(){
         console.log(`about to erase marked pieces.`);  
@@ -639,24 +630,39 @@ window.onload = function() {
     function fallDownPieces()
     {
         console.log(`** falling down pieces **`);
-        for  (let col=0; col<TOTALCOLUMNS; col++) {  // column left to right
-            if (countEmptiesPerColumn(col)>0) { 
-                console.log('found empties in column');
-                fallVerticalGrabLoop(col);
-            }
+        for  (let col=0; col<TOTALCOLUMNS; col++) {  // not geting here
+              var blankReport =  anyBlanksOnColumn(col);
+              console.log(`total blanks on anynblankson ${blankReport}`);
+                if (anyBlanksOnColumn(col)>0) 
+                {
+                    var filteredCollumn = filterColumn(col);       
+                    console.log(`total filtered colummn length ${filteredCollumn.length}`); // it's 1 below
+                    fallVerticalGrabLoop(col);
+                }
         }
     console.debug(`fall pieces done`);
     }
 
+    function anyBlanksOnColumn(col){
+        var foundBlanks = 0; 
+        for (var thisRow = 0; thisRow<TOTALROWS-1; thisRow++){
+            //console.log(`found blank tile, type : ${level.tiles[col][thisrow].tileType}`);
+                if (level.tiles[col][thisRow].tileType ==0 )
+                {
+                    
+                    foundBlanks+=1;
+                }
+        }        
+        return foundBlanks;
+    }
 
+    // don't use this
     function destroyColumn(column){
-        console.log(`destroying column ${column}`);
+        //console.log(`destroying column ${column}`);
         for (var thisRow = 0; thisRow>TOTALROWS-1; thisRow++){
-            console.log('`helllo!!!');
             level.tiles[column][thisRow].eraseTile(); 
-            drawTile(column,thisrow);
+            //drawTile(column,thisrow);
         }
-        drawTheGrid();
     }
 
     // a totally new function
@@ -664,53 +670,32 @@ window.onload = function() {
     // just re-do the stack
     function fallVerticalGrabLoop(currentColumn)
     {
-        // collect all non-blanks
-        var nonBlankTiles = new Array(); 
-        var myCounter = 0; 
-        for (let thisRow = TOTALROWS-1; thisRow > 0; thisRow--) {
-                    if (level.tiles[currentColumn][thisRow].tileType !=0){
-                        var targetTile = level.tiles[currentColumn][thisRow]; 
-                        var targetCol = level.tiles[currentColumn][thisRow].col;
-                        var targetRow = level.tiles[currentColumn][thisRow].row;
-                        var thisTileType = level.tiles[currentColumn][thisRow].tileType;
-                        var thisTileColor = level.tiles[currentColumn][thisRow].tileColor;
-                        //nonBlankTiles.push(new gameTile(targetCol,targetRow,thisTileType,thisTileColor) ); // poison
+        var nonBlankTiles = [];
+        for (let myRow = TOTALROWS-1; myRow > -1; myRow--) {
+                    var thisTile = level.tiles[currentColumn][myRow]; // target tile
+                    if ( thisTile.tileType  != 0 ) // look for non blanks
+                    {       
+                       nonBlankTiles.push(thisTile);
                     }
         }
-
-        // // erase the tiles(start fresh)
-        // for (let thisRow = TOTALROWS-1; thisRow > 0; thisRow--) {
-        //     // loop upward
-        //       level.tiles[currentColumn][thisRow].eraseTile();
-        // }
-
-        // re-graft the tiles
-        // poison?  
-        // var upCounter = 0; 
-        // for (let thisRow = TOTALROWS-1; thisRow > 0; thisRow--) {
-        //     // loop upward
-        //    level.tiles[currentColumn][thisRow] = nonBlankTiles[upCounter++];
-        //    }           
+        console.log(`total nonblanktiles for col ${currentColumn} reconstruct tile length::${nonBlankTiles.length}`);  // works
     }   
 
 
-    // busted(on tile color)
-    function quickTileReport(col,row){
-        //console.log(`    >col${col},row:${row} color:${level.tiles[col][row].tileColor}`);
-    }
-
-    // count all tiles for deletion
-    function countMarkedTiles(){
-        var markedTilesSofar = 0; 
-        for (let row = 0; row < TOTALROWS-1; row++) {
-            for (let col = 0; col < TOTALCOLUMNS-1; col++) {
-                if (level.tiles[col][row].markTile == true)        
-                {
-                    markedTilesSofar+=1; // self-assertion
-                }
-            }
-        }
-        return markedTilesSofar; 
+    // filters out a column of empty tiles
+    // puts the empties to the top.
+    // top to down(experimental)
+    function filterColumn(thisColumn){
+        var filteredList = [];
+        for (let row=0; row<TOTALROWS;row++) {      
+            console.log(` (filter) current row: ${row}`);
+            if (level.tiles[thisColumn][row].tileType !=0) 
+            {
+                filteredList.push(level.tiles[thisColumn][row]);
+            }    
+        }        
+        console.log(`found # of empty tiles for this column: ${filteredList.length}`);
+        return filteredList; 
     }
     
 
@@ -720,9 +705,8 @@ window.onload = function() {
     function countEmptiesPerColumn(col)
     {
         var foundEmpties =0;
-            for (let row=0; row<TOTALROWS-1;row++) {      
-                //console.log(`(countempties) row: ${row}  col${col}`);
-                if (level.tiles[col][row].tileType == 0)
+            for (let row=0; row<TOTALROWS;row++) {      
+                if (level.tiles[col][row].tileType == 0) 
                 {
                     console.log(`found empty ${row},${col}: total: ${foundEmpties}`);
                     foundEmpties+=1;
