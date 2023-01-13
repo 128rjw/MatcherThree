@@ -79,11 +79,11 @@ window.onload = function() {
             this.col = column;  // not really used(2-dim array used instead)
             this.row = row;            
             this.markedTile = false; 
-            this.tileType = 1; // myTileType;
+            this.tileType  = myTileType; // myTileType;
             this.tileColor  =  tilecolor; // returnRandomTileColor(); 
         }
 
-        // in play!
+        // mark tile for potential deletion
         markTile()
         {
             //console.log(`>>tile ${this.col},${this.row} marked`);
@@ -102,7 +102,7 @@ window.onload = function() {
         {
             this.tileType = 0; 
             this.tileColor = -1;
-            this.markedTile = true; // might need to change later
+            //this.markedTile = true; // might need to change later
             //console.log(`&&  tile ${this.col},${this.row} erased`); 
         }
 
@@ -115,16 +115,33 @@ window.onload = function() {
 
         // when swapping tiles
         // set ALL properties but the xcor and ycor
-        // 
-        graftTile(ddd){
-            this.tileType = ddd.tileType;
-            this.tileColor = ddd.tileColor;
+        // don't use yet
+        reassignTile(newTileObject){
+            console.log(`reassigning tile: ${self.xcor}, ${self.ycor} `);
+            this.tileType = newTileObject.tileType;
+            this.tileColor = newTileObject.tileColor;
             this.markedTile = false;
         }
+
+        // for moving tiles
+        // crude, but should work
+        // might only allow for grafting on blank tiles
+        // 
+        reassignTileMk2(originalTile, newTile){
+            console.log(`reassigning tile ${self.xcor} ${self.ycor}`);
+            originalTile.tileType = newTile.tileType;
+            originalTile.tilecolor = newTile.tilecolor; 
+            // anything else?
+            drawTile(newTile.xcor,newTile.ycor);
+
+        }
+
+
 
 
     }
 
+    // todo: use reset turn to start
     function startNewGame(){
         console.log('starting new game');
         level.totalTurns = 0; 
@@ -631,17 +648,20 @@ window.onload = function() {
     {
         console.log(`** falling down pieces **`);
         for  (let col=0; col<TOTALCOLUMNS; col++) {  // not geting here
-            //   var blankReport =  anyBlanksOnColumn(col);
-            //   console.log(`total blanks on anynblankson ${blankReport}`);
                 if (anyBlanksOnColumn(col)>0) 
                 {
-                    var filteredCollumn = filterColumn(col);       
-                    for (x in filterColumn)
+                    var remainingTiles = tilesOnlyFilteredColumn(col);       
+                    for (thisTile in tilesOnlyFilteredColumn)
                     {
+                        // have to massage tiles
+                        console.log(`thisTile ${thisTile.xcor}`);
                         // loopy
+                        drawTile(thisTile.xcor,thisTile.ycor); // wrong
                     }
-                    console.log(`total filtered colummn length ${filteredCollumn.length}`); // it's 1 below
+                    console.log(`total filtered colummn length ${remainingTiles.length}`); // it's 1 below
                     fallVerticalGrabLoop(col);
+                    destroyColumn(col);
+                    redrawColumn(col);
                 }
         }
     console.debug(`fall pieces done`);
@@ -663,9 +683,18 @@ window.onload = function() {
     // can use for redraw
     // 
     function destroyColumn(column){
+        console.log(`destroying column ${column}`);
         for (var thisRow = 0; thisRow>TOTALROWS-1; thisRow++){
-            level.tiles[column][thisRow].eraseTile(); 
+            level.tiles[column][thisRow].eraseTile();  
+            drawTile(column,thisRow);
         }
+    }
+
+    function redrawColumn(column){
+        console.log(`redrawing column ${column}`);
+        for (var thisRow = 0; thisRow>TOTALROWS-1; thisRow++){
+            drawTile(column,thisRow);  
+        }    
     }
 
     // a totally new function
@@ -682,44 +711,37 @@ window.onload = function() {
                     }
         }
         console.log(`total nonblanktiles for col ${currentColumn} reconstruct tile length::${nonBlankTiles.length}`);  // works
+        return nonBlankTiles; 
     }   
 
 
     // filters out a column of empty tiles
     // puts the empties to the top.
     // top to down(experimental)
-    function filterColumn(thisColumn){
+    // use this
+    function tilesOnlyFilteredColumn(thisColumn){
         var filteredList = [];
-        for (let row=0; row<TOTALROWS;row++) {      
+        for (let thisRow=0; thisRow<TOTALROWS;thisRow++) {      
             //console.log(` (filter) current row: ${row}`);
-            if (level.tiles[thisColumn][row].tileType !=0) 
+            if (level.tiles[thisColumn][thisRow].tileType !=0) // anything not blank
             {
-                // TODO: transpose proper X-y coordinates for new tiles.
-                // need to set XCOR and ycor probably
-                filteredList.push(level.tiles[thisColumn][row]);
+                console.log(`re-building column ${thisColumn}. row${thisRow}`); // good
+                var movedTile = level.tiles[thisColumn][thisRow]; // grab tile
+                //movedTile.ycor = thisRow; // this might be bad
+
+                filteredList.push(movedTile);
             }    
         }        
-        console.log(`found # of empty tiles for this column: ${filteredList.length}`);        
+        console.log(`filtered list length  ${filteredList.length}`);  // now we have copy
+
+        destroyColumn(thisColumn);
+
+        // for (freshTile in filteredList){
+        //     level.tiles[thisColumn][4].reassignTileMk2(level.tiles[thisColumn][4],freshTile); // poison!
+        // }    
         return filteredList; 
     }
     
-
-    // helper function
-    // counts empty tiles per column
-    // works!
-    function countEmptiesPerColumn(col)
-    {
-        var foundEmpties =0;
-            for (let row=0; row<TOTALROWS;row++) {      
-                if (level.tiles[col][row].tileType == 0) 
-                {
-                    console.log(`found empty ${row},${col}: total: ${foundEmpties}`);
-                    foundEmpties+=1;
-                }
-            console.log(`total empties for column ${col}: ${foundEmpties}`);                
-        }
-        return foundEmpties;
-    }
 
 
 
