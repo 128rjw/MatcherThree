@@ -625,11 +625,12 @@ window.onload = function() {
     function fallDownPieces()
     {
         console.log(`** falling down pieces **`);
-        for  (let column=0; column<TOTALCOLUMNS; column++) {  // not geting here
+        for  (let column=0; column<TOTALCOLUMNS; column++) {  
                 if (anyBlanksOnColumn(column)>0) 
-                {
+                {                    
                     fallVerticalGrabLoop(column);
-                    destroyColumn(column);
+                    //destroyColumn(column);
+                    redrawColumn(column);
                 }
         }
         console.debug(`fall pieces done`);
@@ -671,16 +672,27 @@ window.onload = function() {
     // just re-do the stack
     function fallVerticalGrabLoop(currentColumn)
     {
-        var nonBlankTiles = [];
+        var nonBlankTiles = []; // get all blank tiles
         for (let myRow = TOTALROWS-1; myRow > -1; myRow--) {
-                    var thisTile = level.tiles[currentColumn][myRow]; // target tile
-                    if ( thisTile.tileType  != 0 ) // look for non blanks
-                    {       
-                       nonBlankTiles.push(thisTile);
+                    console.log(`backwards counter ${myRow}`); // found it
+                    console.log(`${level.tiles[currentColumn][myRow].tileType}  found nonblank tile`);
+                    if ( level.tiles[currentColumn][myRow].tileType  != 0 ) // look for non blanks
+                    { 
+                       console.log('PUSHING');
+                       nonBlankTiles.push(level.tiles[currentColumn][myRow]); // this could be bad
                     }
         }
         console.log(`total nonblanktiles for col ${currentColumn} reconstruct tile length::${nonBlankTiles.length}`);  // works
-        return nonBlankTiles; 
+
+        // just finish it here
+
+        destroyColumn(currentColumn);
+
+        // now, rebuild!
+
+        
+
+        
     }   
 
 
