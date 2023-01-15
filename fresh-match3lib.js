@@ -96,9 +96,9 @@ window.onload = function() {
 
         // mark tile for potential deletion
         markTile()   {
-            //console.log(`>>tile ${this.col},${this.row} marked`);
             this.markedTile = true;
         }
+
 
         redrawSelf()
         {
@@ -144,7 +144,6 @@ window.onload = function() {
 
         }
 
-        // never gets here
         killTile()
         {
             console.log('destroying tile');
@@ -178,23 +177,21 @@ window.onload = function() {
 
     // Draw a frame with a border
     // blanks it all out
-    // fun first?
     function drawGridFrame() {
-        // Draw header block
-        context.fillStyle = "green";
+        context.fillStyle = "gray";
         context.fillRect(0, 0, canvas.width, 65);
 
         context.fillStyle = "darkgreen";
         context.fillRect(0, 0, canvas.width, canvas.height);
         
         context.fillStyle = BACKGROUNDCOLOR; 
-        context.fillRect(1, 1, canvas.width-2, canvas.height-2); // the actual canvas
+        context.fillRect(1, 1, canvas.width-2, canvas.height-2); 
 
         // Draw title top bar
         // all of this will change
-        context.fillStyle = "red";
+        context.fillStyle = "black";
         context.font = "24px Verdana";
-        context.fillText("Match 3 Game", 10, 30);
+        context.fillText("Duyu Tile", 230, 30);
         console.log('drawing grid frame FINISHED');
     }
 
@@ -226,10 +223,7 @@ window.onload = function() {
 
     // just for drawing tiles
     function getTileCoordinate(column, row, columnOffset, rowOffset) {
-        //console.log(`thistile: XCOR:  ${thisTile.xcor}`);
-        //var translatedTileX =  thisTile.xcor + (column + columnOffset) * TILEWIDTH; // original
-        //var translatedTileY = thisTile.ycor + (row + rowOffset) * TILEHEIGHT;  
-        var translatedTileX =  column + (column + columnOffset) * TILEWIDTH;  // ok so far
+        var translatedTileX =  column + (column + columnOffset) * TILEWIDTH;  
         var translatedTileY = row + (row + rowOffset) * TILEHEIGHT;  
         return { tilex: translatedTileX, tiley: translatedTileY};
     }
@@ -238,8 +232,6 @@ window.onload = function() {
     // draw grid tiles
     // the outer loop
     function drawTheGrid(){
-        //console.log('drawing the grid of tiles');        
-        console.log('drawing grid');
         for (let column=0; column<TOTALCOLUMNS; column++) {
             for (let row=0; row<TOTALROWS; row++) {
                         drawTile(column,row);                    
@@ -257,34 +249,30 @@ window.onload = function() {
     }
 
 
-    function drawTile(col,row){
-        var myCoordinates = getTileCoordinate(col, row, 6, 3);     
+    function drawTile(column,row){
+        var myCoordinates = getTileCoordinate(column, row, 6, 3);     
         //var thisTile = level.tiles[col][row];
         //console.log(`drawing tile; ${col} ${row} type${thisTile.tileType}`);
-        if (level.tiles[col][row].tileType == 0){
+        if (level.tiles[column][row].tileType == 0){
             context.fillStyle = BACKGROUNDCOLOR; //  
             context.fillRect(myCoordinates.tilex + 2, myCoordinates.tiley + 2, TILEWIDTH - 4, TILEHEIGHT - 4); 
         }
 
-        else if (level.tiles[col][row].tileType   == 1)  
+        else if (level.tiles[column][row].tileType   == 1)  
         {            
-            context.fillStyle = tilecolors[level.tiles[col][row].tileColor]; 
+            context.fillStyle = tilecolors[level.tiles[column][row].tileColor]; 
             context.fillRect(myCoordinates.tilex + 2, myCoordinates.tiley + 2, TILEWIDTH - 4, TILEHEIGHT - 4); 
         }
 
-        else if (level.tiles[col][row].tileType == 2){
+        else if (level.tiles[column][row].tileType == 2){
             console.log('bomb');
         }
 
     }
 
 
-
-    // graphics library
-    // TODO: tweakable diversity
     function returnRandomTileColor() {
         var myValue = Math.floor(Math.random() * tilecolors.length); 
-        //console.log(`fresh tile color: ${myValue} translates to ${tilecolors[myValue]} `);
         return myValue;
     }    
 
@@ -297,7 +285,7 @@ window.onload = function() {
         console.log("MAIN INIT");
         canvas.addEventListener("mousedown", onMouseDown);  
         canvas.addEventListener("onkeydown",onKeyDown);
-        // initialize the tile grid(mandatory)
+        // initialize the tile grid - mandatory 
         for (var thisColumn=0; thisColumn<TOTALCOLUMNS; thisColumn++) {
             level.tiles[thisColumn] = []; 
             for (var thisRow=0; thisRow<TOTALROWS; thisRow++) {
@@ -325,20 +313,14 @@ window.onload = function() {
         if (mt.validTileClick) {
                 PlayTileTurn(mt.x,mt.y);
         }
-        else 
-        {
-            console.log('tile not clicked: ');
-        }
-        console.log(`mousex: ${mousePos.x} ${mousePos.y}`);
-
+        
         for (var gameButtons=0; gameButtons<Buttons.length; gameButtons++) {
             if (mousePos.x >= Buttons[gameButtons].x && mousePos.x < Buttons[gameButtons].x+Buttons[gameButtons].width &&
                 mousePos.y >= Buttons[gameButtons].y && mousePos.y < Buttons[gameButtons].y+Buttons[gameButtons].height)
                  {
 
                     if (gameButtons == 0) {
-                        console.log(`button 1`);
-                        drawTheGrid();
+                        startNewGame(); 
                     }
                      else if (gameButtons == 1) {
                         zap1_1_tile();
@@ -353,9 +335,6 @@ window.onload = function() {
         
     
     }
-
-        // TODO:
-        // you can refresh things here, refreshes each click
 
     
 
@@ -397,18 +376,17 @@ window.onload = function() {
     // THE BIG TURN
     // 
     function PlayTileTurn(column,row){
-        // determine clicked-on type
         console.log(`playing tile ${column},${row}`);  
         if (level.tiles[column][row].tileType == 1) // works
         {
             thisTurn.colorInPlay = level.tiles[column][row].tileColor
-            checkNeighbors(column,row,false); // do passive check first
+            checkNeighbors(column,row,false); 
             if (thisTurn.markedNeighbors>0){
                 console.log(`found matched tiles, erasing`);
-                checkNeighbors(column,row,true); // active checking
+                checkNeighbors(column,row,true); 
                 recursiveCheckNeighbors();  
-                eraseMarkedPieces();  // only thing that erases tiles!
-                fallDownPieces();  // not working   
+                eraseMarkedPieces(); 
+                fallDownPieces();  
             }
         }
         else
@@ -420,13 +398,11 @@ window.onload = function() {
     }
 
     // now find neigboring tiles we haven't found yet
-    // poison!
     function recursiveCheckNeighbors(){
         var recrFoundTiles = 0; // private counter 
         console.log(`recursive check neighbors`);
         for (let row = 0; row < TOTALROWS-1; row++) {            
             for (let column = 0; column < TOTALCOLUMNS-1; column++) {
-                //console.log(`col: ${col} row: ${row}`);
                 if (level.tiles[column][row].tileColor == thisTurn.colorInPlay && 
                     level.tiles[column][row].markedTile == true)
                     {     
@@ -521,7 +497,6 @@ window.onload = function() {
         if (foundAnyNeighbor==false)
         {
             console.log(`no matches found`);
-            //thisTurn.colorInPlay = -1; // -1 is no matches
         }
         else{
             // mark self-tile as marked
@@ -589,7 +564,7 @@ window.onload = function() {
     // zaps specific tile
     function zap1_1_tile(){
         console.log(`running debug function`);
-        destroyColumn(1);
+        level.tiles[1][1].killTile(); // poisons
         eraseMarkedPieces(); 
         fallDownPieces(); 
         drawTheGrid();
@@ -652,7 +627,7 @@ window.onload = function() {
     // can use for redraw
     // 
     function destroyColumn(column){
-        console.log(`destroying column ${column}`);
+        //console.log(`destroying column ${column}`);
         for (var thisRow = 0; thisRow<TOTALROWS; thisRow++){
             level.tiles[column][thisRow].tileType = 0;
             drawTile(column,thisRow);
@@ -672,27 +647,26 @@ window.onload = function() {
     // just re-do the stack
     function fallVerticalGrabLoop(currentColumn)
     {
-        var nonBlankTiles = []; // get all blank tiles
+        var nonBlankTiles = []; // collage all non blank tiles
+        var upCounter=0;
         for (let myRow = TOTALROWS-1; myRow > -1; myRow--) {
-                    console.log(`backwards counter ${myRow}`); // found it
-                    console.log(`${level.tiles[currentColumn][myRow].tileType}  found nonblank tile`);
+                    //console.log(`backwards counter ${myRow}`); // found it
                     if ( level.tiles[currentColumn][myRow].tileType  != 0 ) // look for non blanks
                     { 
-                       console.log('PUSHING');
-                       var newTile = new gameTile(currentColumn,myRow,level.tiles[currentColumn][myRow].tileType, // row is wrong!
-                        level.tiles[currentColumn][myRow].tileColor);
-                       //nonBlankTiles.push(level.tiles[currentColumn][myRow]); // this could be bad
-                       nonBlankTiles.push(newTile); // this could be bad
+                       var newTile = new gameTile(currentColumn,myRow,
+                       level.tiles[currentColumn][myRow].tileType, // column is wrong!
+                       level.tiles[currentColumn][myRow].tileColor);
+                       nonBlankTiles[upCounter++] = newTile; 
                     }
         }
-        console.log(`total nonblanktiles for col ${currentColumn} reconstruct tile length::${nonBlankTiles.length}`);  // works
-
-        // just finish it here
-
+        //console.log(`total nonblanktiles for col ${currentColumn} reconstruct tile length::${nonBlankTiles.length}`);  // works
+        
+        // clean column for redraw
         destroyColumn(currentColumn);
 
         // now, rebuild!
         var rowOffset = TOTALROWS - nonBlankTiles.length;
+        //console.log(`calculated offset: ${rowOffset}`);
         var upCounter = 0;
         var newUpCounter = TOTALROWS-1;
         nonBlankTiles.forEach(movedTile => {
@@ -704,36 +678,7 @@ window.onload = function() {
 
         
     }   
-
-
-    // filters out a column of empty tiles
-    // puts the empties to the top.
-    // top to down(experimental)
-    // use this
-    function tilesOnlyFilteredColumn(thisColumn){
-        var filteredList = [];
-        for (let thisRow=0; thisRow<TOTALROWS;thisRow++) {      
-            //console.log(` (filter) current row: ${row}`);
-            if (level.tiles[thisColumn][thisRow].tileType !=0) // anything not blank
-            {
-                console.log(`re-building column ${thisColumn}. row${thisRow}`); // good
-                var movedTile = level.tiles[thisColumn][thisRow]; // grab tile
-                filteredList.push(movedTile);
-            }    
-        }        
-        console.log(`filtered list length  ${filteredList.length}`);  // now we have copy
-        var rowup = TOTALROWS-1;
-        for (var newUpTile in filteredList){
-            console.log(`rowup ${rowup}`);
-            level.tiles[thisColumn][rowup].tileType = newUpTile.tileType;
-            level.tiles[thisColumn][rowup].tilecolor = newUpTile.tilecolor;
-            rowup-=1;
-        }
-        return filteredList; // not working, do the work here
-    }
-    
-
-
+ 
 
     // primary entry point
     init();
