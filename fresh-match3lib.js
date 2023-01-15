@@ -679,7 +679,10 @@ window.onload = function() {
                     if ( level.tiles[currentColumn][myRow].tileType  != 0 ) // look for non blanks
                     { 
                        console.log('PUSHING');
-                       nonBlankTiles.push(level.tiles[currentColumn][myRow]); // this could be bad
+                       var newTile = new gameTile(currentColumn,myRow,level.tiles[currentColumn][myRow].tileType, // row is wrong!
+                        level.tiles[currentColumn][myRow].tileColor);
+                       //nonBlankTiles.push(level.tiles[currentColumn][myRow]); // this could be bad
+                       nonBlankTiles.push(newTile); // this could be bad
                     }
         }
         console.log(`total nonblanktiles for col ${currentColumn} reconstruct tile length::${nonBlankTiles.length}`);  // works
@@ -689,8 +692,15 @@ window.onload = function() {
         destroyColumn(currentColumn);
 
         // now, rebuild!
-
-        
+        var rowOffset = TOTALROWS - nonBlankTiles.length;
+        var upCounter = 0;
+        var newUpCounter = TOTALROWS-1;
+        nonBlankTiles.forEach(movedTile => {
+            level.tiles[currentColumn][newUpCounter].tileColor = movedTile.tileColor; 
+            level.tiles[currentColumn][newUpCounter].tileType = 1; // element.tileType; 
+            upCounter+=1;
+            newUpCounter-=1;
+        });
 
         
     }   
