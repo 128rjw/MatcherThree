@@ -76,22 +76,22 @@ window.onload = function() {
      {
         constructor(column,row,myTileType,tilecolor){
             //  console.log(`new tile: col${column}, row: ${row} tiletype:${myTileType}`);
-            this.column = column;  // not really used(2-dim array used instead)
+            this.column = column;  
             this.row = row;            
             this.markedTile = false; 
-            this.tileType  = myTileType; // myTileType;
-            this.tileColor  =  tilecolor; // returnRandomTileColor(); 
+            this.tileType  = myTileType; 
+            this.tileColor  =  tilecolor; 
         }
 
 
 
 
+        // works
         eraseTile() {
             this.tileType = 0; 
             this.tileColor = -1;
             this.markedTile = true; // might need to change later
-            console.log(`&&  tile ${this.column},${this.row} erased`); 
-            //level.tiles[self.column][self.row].  //this.redrawSelf(); - messing things up 
+            //console.log(`&&  tile ${this.column},${this.row} erased`); 
         }
 
         // mark tile for potential deletion
@@ -139,7 +139,6 @@ window.onload = function() {
             console.log(`reassigning tile ${self.xcor} ${self.ycor}`);
             originalTile.tileType = newTile.tileType;
             originalTile.tilecolor = newTile.tilecolor; 
-            // anything else?
             this.redrawSelf(); 
 
         }
@@ -251,7 +250,6 @@ window.onload = function() {
 
     function drawTile(column,row){
         var myCoordinates = getTileCoordinate(column, row, 6, 3);     
-        //var thisTile = level.tiles[col][row];
         //console.log(`drawing tile; ${col} ${row} type${thisTile.tileType}`);
         if (level.tiles[column][row].tileType == 0){
             context.fillStyle = BACKGROUNDCOLOR; //  
@@ -369,6 +367,7 @@ window.onload = function() {
         thisTurn.foundMatchedTiles = false;
         thisTurn.foundanyNeighbor = false;    
         pasvFoundMatches = 0;     
+        thisTurn.markedNeighbors = 0; 
     }
 
 
@@ -383,10 +382,17 @@ window.onload = function() {
             checkNeighbors(column,row,false); 
             if (thisTurn.markedNeighbors>0){
                 console.log(`found matched tiles, erasing`);
-                checkNeighbors(column,row,true); 
-                recursiveCheckNeighbors();  
-                eraseMarkedPieces(); 
-                fallDownPieces();  
+                if (checkNeighbors(column,row,true))
+                {
+                   recursiveCheckNeighbors();  
+                   eraseMarkedPieces(); 
+                   fallDownPieces();  
+                   resetTurn(); 
+                }
+            }
+            else
+            {
+                console.log(`no marked neighbors found`);
             }
         }
         else
@@ -394,15 +400,16 @@ window.onload = function() {
             console.log('non-tile clicked(future expansion)');
         }
         drawTheGrid(); // refresh board
-        resetTurn(); 
+        
     }
 
     // now find neigboring tiles we haven't found yet
     function recursiveCheckNeighbors(){
         var recrFoundTiles = 0; // private counter 
         console.log(`recursive check neighbors`);
-        for (let row = 0; row < TOTALROWS-1; row++) {            
-            for (let column = 0; column < TOTALCOLUMNS-1; column++) {
+        for (let row = 0; row < TOTALROWS; row++) {            
+            for (let column = 0; column < TOTALCOLUMNS; column++) {
+                console.log(` RCR: ${column}${row}`);
                 if (level.tiles[column][row].tileColor == thisTurn.colorInPlay && 
                     level.tiles[column][row].markedTile == true)
                     {     
@@ -447,8 +454,9 @@ window.onload = function() {
                     foundAnyNeighbor = true; 
                 }                           
            }
-        if  (column==TOTALCOLUMNS)  // right edge case(double check this)
+        if  (column==TOTALCOLUMNS-1)  // right edge case(double check this)
         {
+            console.log('rightmost edge case');
             if ( checkWestNeighbor(column,row,active))
             {
                 thisTurn.markedNeighbors+=1;
@@ -483,8 +491,9 @@ window.onload = function() {
             }
 
         }
-        else if  (row==TOTALROWS) // bottom edge case
+        else if  (row==TOTALROWS-1) // bottom edge case
         {
+            console.log(`bottom edge case`);
             if (checkNorthNeighbor(column,row,active))            
             {                   
                 thisTurn.markedNeighbors+=1;
@@ -502,6 +511,7 @@ window.onload = function() {
             // mark self-tile as marked
             if (active) {level.tiles[column][row].markTile();} 
         }
+        console.log(`this turn's marked neighbors ${thisTurn.markedNeighbors}`); // works()
         return foundAnyNeighbor; 
     }
 
@@ -512,7 +522,6 @@ window.onload = function() {
     // shouldmark(bool) - mark for deletion?
     function checkEastNeighbor(col,row,shouldMark){
         var foundAnyNeighbor = false;
-        if (col+1 >= TOTALCOLUMNS) { console.warn(`columns exceeded! ${col+1}`)}
         if (level.tiles[col+1][row].tileColor == thisTurn.colorInPlay)
         {
             thisTurn.pasvFoundMatches+=1;
@@ -573,18 +582,15 @@ window.onload = function() {
 
 
 
-
-
-
-    // 2. erase the tiles
-    // works 
+    // 2. erase marked tiles
     function eraseMarkedPieces(){
-        console.log(`about to erase marked pieces.`);  
+        //console.log(`about to erase marked pieces.`);  
         for (let row = 0; row < TOTALROWS; row++) {
             for (let column = 0; column < TOTALCOLUMNS; column++) {
                 if (level.tiles[column][row].markedTile == true)
                 {           
                     level.tiles[column][row].eraseTile(); 
+                    thisTurn.totalErasedTiles+=1;
                 }
             }
         }         
@@ -604,18 +610,17 @@ window.onload = function() {
                 if (anyBlanksOnColumn(column)>0) 
                 {                    
                     fallVerticalGrabLoop(column);
-                    //destroyColumn(column);
                     redrawColumn(column);
                 }
         }
-        console.debug(`fall pieces done`);
+        //console.debug(`fall pieces done`);
     }
 
 
     // works
     function anyBlanksOnColumn(col){
         var foundBlanks = 0; 
-        for (var thisRow = 0; thisRow<TOTALROWS-1; thisRow++){
+        for (var thisRow = 0; thisRow<TOTALROWS; thisRow++){
                 if (level.tiles[col][thisRow].tileType ==0 )
                 {                    
                     foundBlanks+=1;
