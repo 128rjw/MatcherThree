@@ -375,13 +375,14 @@ window.onload = function() {
     // THE BIG TURN
     // 
     function PlayTileTurn(column,row){
+        console.clear(); 
         console.log(`playing tile ${column},${row}`);  
         if (level.tiles[column][row].tileType == 1) // works
         {
             thisTurn.colorInPlay = level.tiles[column][row].tileColor
-            checkNeighbors(column,row,false); 
-            if (thisTurn.markedNeighbors>0){
-                console.log(`found matched tiles, erasing`);
+            if (checkNeighbors(column,row,false))
+            {
+                console.log(`found matched tiles, doing recursive check`);
                 if (checkNeighbors(column,row,true))
                 {
                    recursiveCheckNeighbors();  
@@ -409,7 +410,7 @@ window.onload = function() {
         console.log(`recursive check neighbors`);
         for (let row = 0; row < TOTALROWS; row++) {            
             for (let column = 0; column < TOTALCOLUMNS; column++) {
-                console.log(` RCR: ${column}${row}`);
+                //console.log(` RCR: ${column}${row}`);
                 if (level.tiles[column][row].tileColor == thisTurn.colorInPlay && 
                     level.tiles[column][row].markedTile == true)
                     {     
@@ -572,11 +573,7 @@ window.onload = function() {
     // DEBUG ONLY
     // zaps specific tile
     function zap1_1_tile(){
-        console.log(`running debug function`);
-        level.tiles[1][1].killTile(); // poisons
-        eraseMarkedPieces(); 
-        fallDownPieces(); 
-        drawTheGrid();
+
     }
     
 
@@ -605,7 +602,7 @@ window.onload = function() {
     // needs a rewrite
     function fallDownPieces()
     {
-        console.log(`** falling down pieces **`);
+        //console.log(`** falling down pieces **`);
         for  (let column=0; column<TOTALCOLUMNS; column++) {  
                 if (anyBlanksOnColumn(column)>0) 
                 {                    
@@ -642,7 +639,7 @@ window.onload = function() {
 
     function redrawColumn(column){
         console.log(`redrawing column ${column}`);
-        for (var thisRow = 0; thisRow<TOTALROWS-1; thisRow++){
+        for (var thisRow = 0; thisRow<TOTALROWS; thisRow++){
             drawTile(column,thisRow);  
         }    
     }
