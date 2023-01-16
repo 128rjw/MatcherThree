@@ -81,6 +81,36 @@
 
 
 
+    function fallVerticalGrabLoop(currentColumn)
+    {
+        var nonBlankTiles = []; // collage all non blank tiles
+        var upCounter=0;
+        for (let myRow = TOTALROWS-1; myRow > -1; myRow--) {                    
+                    if ( level.tiles[currentColumn][myRow].tileType  != 0 ) // look for non blanks
+                    { 
+                       var newTile = new gameTile(currentColumn,myRow,
+                       level.tiles[currentColumn][myRow].tileType, // column is wrong!
+                       level.tiles[currentColumn][myRow].tileColor);
+                       nonBlankTiles[upCounter++] = newTile; 
+                    }
+        }
+        //console.log(`total nonblanktiles for col ${currentColumn} reconstruct tile length::${nonBlankTiles.length}`);  // works        
+        // clean column for redraw
+        destroyColumn(currentColumn);
+        // now, rebuild!
+        var rowOffset = TOTALROWS - nonBlankTiles.length;
+        //console.log(`calculated offset: ${rowOffset}`);
+        var upCounter = 0;
+        var newUpCounter = TOTALROWS-1;
+        nonBlankTiles.forEach(movedTile => {
+            level.tiles[currentColumn][newUpCounter].tileColor = movedTile.tileColor; 
+            level.tiles[currentColumn][newUpCounter].tileType = 1; // element.tileType; 
+            upCounter+=1;
+            newUpCounter-=1;
+        });        
+    }   
+
+
     // On mouse button click
     // keep, but change
     function onMouseDownOld(event) {
